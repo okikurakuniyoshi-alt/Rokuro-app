@@ -102,7 +102,7 @@ nav button .ic{font-size:20px;line-height:1;}
 @media(max-width:520px){.fab{right:18px;}}
 .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:#0b1220;color:#fff;
   border:1px solid var(--line);padding:11px 18px;border-radius:12px;z-index:60;font-size:13px;font-weight:600;
-  opacity:0;transition:.3s;pointer-events:none;white-space:nowrap;}
+  opacity:0;transition:.3s;pointer-events:none;max-width:90%;text-align:center;}
 .toast.on{opacity:1;bottom:108px;}
 .divider{height:1px;background:var(--line);margin:12px 0;}
 .k{font-size:12px;color:var(--sub);}
@@ -118,18 +118,11 @@ a{color:var(--accent);}
     <h1>🌀 六層連動操法 運営管理 <span id="gdot" style="font-size:11px;"></span></h1>
     <div class="date" id="todayLabel"></div>
   </header>
-
-  <!-- DASHBOARD -->
   <section class="view active" id="view-dash"></section>
-  <!-- CALENDAR -->
   <section class="view" id="view-cal"></section>
-  <!-- TASKS -->
   <section class="view" id="view-task"></section>
-  <!-- LINE -->
   <section class="view" id="view-line"></section>
-  <!-- SALES -->
   <section class="view" id="view-sales"></section>
-  <!-- MORE (youtube/zoom/settings) -->
   <section class="view" id="view-more"></section>
 </div>
 
@@ -150,65 +143,53 @@ a{color:var(--accent);}
 <div class="toast" id="toast"></div>
 
 <script>
-/* ============================================================
-   六層連動操法 運営管理アプリ  (single-file PWA)
-   データはこの端末(localStorage)に保存。Google連携は設定から。
-   ============================================================ */
-
-const TYPES = {
+var TYPES = {
   seminar:  {label:'セミナー', color:'#2563eb', gcal:'9'},
   review:   {label:'復習会',   color:'#16a34a', gcal:'10'},
   youtube:  {label:'YouTube',  color:'#dc2626', gcal:'11'},
   zoom:     {label:'Zoom',     color:'#7c3aed', gcal:'3'},
-  treatment:{label:'施術',     color:'#ea580c', gcal:'6'},
+  treatment:{label:'施術',     color:'#ea580c', gcal:'6'}
 };
-const MARKS = {'◯':26800,'△':16800,'×':0};
+var MARKS = {'◯':26800,'△':16800,'×':0};
 
-/* ---------- storage ---------- */
-const KEY='rokuso_v1';
-let DB = load();
+var KEY='rokuso_v1';
+var DB = load();
 function load(){
-  try{const d=JSON.parse(localStorage.getItem(KEY)); if(d) return d;}catch(e){}
+  try{var d=JSON.parse(localStorage.getItem(KEY)); if(d) return d;}catch(e){}
   return {events:[],tasks:[],patients:[],settings:{clientId:'',apiKey:'',calendarId:'primary'}};
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 
-/* ---------- date helpers ---------- */
 function pad(n){return String(n).padStart(2,'0');}
 function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
-function parseD(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
-function addDays(s,n){const d=parseD(s);d.setDate(d.getDate()+n);return ymd(d);}
+function parseD(s){var a=s.split('-').map(Number);return new Date(a[0],a[1]-1,a[2]);}
+function addDays(s,n){var d=parseD(s);d.setDate(d.getDate()+n);return ymd(d);}
 function today(){return ymd(new Date());}
-function weekRange(base){ // Monday..Sunday containing base
-  const d=parseD(base);const wd=(d.getDay()+6)%7;
-  const mon=new Date(d);mon.setDate(d.getDate()-wd);
-  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+function weekRange(base){
+  var d=parseD(base);var wd=(d.getDay()+6)%7;
+  var mon=new Date(d);mon.setDate(d.getDate()-wd);
+  var sun=new Date(mon);sun.setDate(mon.getDate()+6);
   return {start:ymd(mon),end:ymd(sun)};
 }
-function lastWeekRange(){const w=weekRange(addDays(today(),-7));return w;}
+function lastWeekRange(){return weekRange(addDays(today(),-7));}
 function inRange(date,a,b){return date>=a&&date<=b;}
-function monthRange(date){const[y,m]=date.split('-').map(Number);
-  return {start:`${y}-${pad(m)}-01`, end:`${y}-${pad(m)}-${pad(new Date(y,m,0).getDate())}`};}
-const DOW=['日','月','火','水','木','金','土'];
-function jdate(s){const d=parseD(s);return `${d.getMonth()+1}/${d.getDate()}(${DOW[d.getDay()]})`;}
+function monthRange(date){var a=date.split('-').map(Number);var y=a[0],m=a[1];
+  return {start:y+'-'+pad(m)+'-01', end:y+'-'+pad(m)+'-'+pad(new Date(y,m,0).getDate())};}
+var DOW=['日','月','火','水','木','金','土'];
+function jdate(s){var d=parseD(s);return (d.getMonth()+1)+'/'+d.getDate()+'('+DOW[d.getDay()]+')';}
 
-/* ---------- toast ---------- */
-let toastT;
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');
-  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),1900);}
+var toastT;
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');
+  clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('on');},2600);}
 
-/* ============================================================
-   SEMINAR AUTO-TASK ENGINE
-   ============================================================ */
 function regenSeminarTasks(ev){
-  DB.tasks = DB.tasks.filter(t=>t.eventId!==ev.id); // clear old
+  DB.tasks = DB.tasks.filter(function(t){return t.eventId!==ev.id;});
   if(ev.type!=='seminar') return;
-  const D=ev.date, C=Number(ev.cohort)||0, S=Number(ev.session)||0;
-  const S3=['未対応','作成済み','送信済み'];
-  const add=(label,due,opts)=>DB.tasks.push({
-    id:uid(),eventId:ev.id,label,due,options:opts,status:opts[0],
-    ctx:`${ev.cohort?ev.cohort+'期 ':''}${ev.session?ev.session+'回目 ':''}${ev.title||''}`.trim()});
+  var D=ev.date, C=Number(ev.cohort)||0, S=Number(ev.session)||0;
+  var S3=['未対応','作成済み','送信済み'];
+  function add(label,due,opts){DB.tasks.push({id:uid(),eventId:ev.id,label:label,due:due,options:opts,status:opts[0],
+    ctx:((ev.cohort?ev.cohort+'期 ':'')+(ev.session?ev.session+'回目 ':'')+(ev.title||'')).trim()});}
   add('予習動画配信案内', addDays(D,-11), S3);
   add('セミナー生案内送信', addDays(D,-3), S3);
   if(C>=7) add('サポーター案内送信（7〜9期）', addDays(D,-3), S3);
@@ -216,21 +197,16 @@ function regenSeminarTasks(ev){
   if(S===6) add('次期セミナー申込案内', D, S3);
   add('セミナー資料添付送付', addDays(D,3), ['未対応','完了']);
 }
-/* events that represent "案内送信" tasks (for 未送信一覧) */
-function isSendTask(t){return t.options.includes('送信済み');}
+function isSendTask(t){return t.options.indexOf('送信済み')>=0;}
 
-/* ============================================================
-   ROUTER
-   ============================================================ */
-let cur='dash';
+var cur='dash';
 function go(v){
   cur=v;
-  document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
+  var views=document.querySelectorAll('.view');for(var i=0;i<views.length;i++)views[i].classList.remove('active');
   document.getElementById('view-'+v).classList.add('active');
-  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
-  document.getElementById('fab').style.display = (v==='line'||v==='more')?'none':'block';
-  render();
-  window.scrollTo(0,0);
+  var nbs=document.querySelectorAll('nav button');for(var j=0;j<nbs.length;j++)nbs[j].classList.toggle('on',nbs[j].dataset.v===v);
+  document.getElementById('fab').style.display=(v==='line'||v==='more')?'none':'block';
+  render();window.scrollTo(0,0);
 }
 function render(){
   if(cur==='dash')renderDash();
@@ -241,496 +217,329 @@ function render(){
   else if(cur==='more')renderMore();
 }
 
-/* ============================================================
-   DASHBOARD
-   ============================================================ */
 function renderDash(){
-  const T=today();
-  const w=weekRange(T);
-  const lw=lastWeekRange();
-  const mr=monthRange(T);
-
-  // tasks
-  const openTasks=DB.tasks.filter(t=>t.status!==last(t.options)&&t.status!=='完了');
-  const todayTasks=openTasks.filter(t=>t.due<=T);
-  const weekTasks=openTasks.filter(t=>inRange(t.due,w.start,w.end));
-  const unsent=DB.tasks.filter(t=>isSendTask(t)&&t.status!=='送信済み');
-
-  // events this week by type
-  const evWeek=t=>DB.events.filter(e=>e.type===t&&inRange(e.date,w.start,w.end)).sort((a,b)=>a.date.localeCompare(b.date));
-
-  // sales
-  const lastSales=sumSales(lw.start,lw.end);
-  const monthSales=sumSales(mr.start,mr.end);
-  const unpaid=DB.patients.filter(p=>!p.paid&&MARKS[p.mark]>0).length;
-
-  const el=document.getElementById('view-dash');
-  el.innerHTML=`
-  <div class="card" style="background:linear-gradient(135deg,#1e293b,#0f2942);">
-    <h2>📌 最優先：抜け漏れチェック</h2>
-    <div class="grid2" style="gap:8px;">
-      <div class="metric ${todayTasks.length?'amber':'green'}"><div class="v">${todayTasks.length}</div><div class="l">今日やること</div></div>
-      <div class="metric ${unsent.length?'red':'green'}"><div class="v">${unsent.length}</div><div class="l">未送信の案内</div></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>📝 今日やること</h2>
-    ${todayTasks.length?taskListHTML(todayTasks,true):'<div class="empty">今日のタスクはありません 🎉</div>'}
-  </div>
-
-  <div class="card">
-    <h2>📨 未送信一覧（送っていない案内）</h2>
-    ${unsent.length?unsent.map(t=>`
-      <div class="list-item">
-        <div class="li-body"><div class="t">${esc(t.label)}</div>
-        <div class="s">${esc(t.ctx||'')} ・ 期限 ${jdate(t.due)}</div></div>
-        <button class="btn sm ok" onclick="setTaskStatus('${t.id}','送信済み')">送信済</button>
-      </div>`).join(''):'<div class="empty">未送信の案内はありません ✅</div>'}
-  </div>
-
-  <div class="card">
-    <h2>🗓 今週やること</h2>
-    ${weekTasks.length?taskListHTML(weekTasks,false):'<div class="empty">今週のタスクはありません</div>'}
-  </div>
-
-  <div class="grid2">
-    ${weekEventCard('セミナー','seminar',evWeek('seminar'))}
-    ${weekEventCard('復習会','review',evWeek('review'))}
-    ${weekEventCard('Zoom','zoom',evWeek('zoom'))}
-    ${weekEventCard('YouTube','youtube',evWeek('youtube'))}
-  </div>
-
-  <div class="card">
-    <h2>💰 売上サマリー（毎週月曜チェック）</h2>
-    <div class="grid2" style="gap:8px;">
-      <div class="metric green"><div class="v">¥${fmt(lastSales)}</div><div class="l">先週売上</div></div>
-      <div class="metric"><div class="v">¥${fmt(monthSales)}</div><div class="l">今月売上</div></div>
-    </div>
-    <div class="metric ${unpaid?'red':'green'}" style="margin-top:8px;"><div class="v">${unpaid}件</div><div class="l">未入金件数</div></div>
-  </div>`;
+  var T=today();var w=weekRange(T);var lw=lastWeekRange();var mr=monthRange(T);
+  var openTasks=DB.tasks.filter(function(t){return t.status!==last(t.options)&&t.status!=='完了';});
+  var todayTasks=openTasks.filter(function(t){return t.due<=T;});
+  var weekTasks=openTasks.filter(function(t){return inRange(t.due,w.start,w.end);});
+  var unsent=DB.tasks.filter(function(t){return isSendTask(t)&&t.status!=='送信済み';});
+  function evWeek(tp){return DB.events.filter(function(e){return e.type===tp&&inRange(e.date,w.start,w.end);}).sort(function(a,b){return a.date.localeCompare(b.date);});}
+  var lastSales=sumSales(lw.start,lw.end);
+  var monthSales=sumSales(mr.start,mr.end);
+  var unpaid=DB.patients.filter(function(p){return !p.paid&&MARKS[p.mark]>0;}).length;
+  var el=document.getElementById('view-dash');
+  el.innerHTML=
+  '<div class="card" style="background:linear-gradient(135deg,#1e293b,#0f2942);">'+
+    '<h2>📌 最優先：抜け漏れチェック</h2>'+
+    '<div class="grid2" style="gap:8px;">'+
+      '<div class="metric '+(todayTasks.length?'amber':'green')+'"><div class="v">'+todayTasks.length+'</div><div class="l">今日やること</div></div>'+
+      '<div class="metric '+(unsent.length?'red':'green')+'"><div class="v">'+unsent.length+'</div><div class="l">未送信の案内</div></div>'+
+    '</div></div>'+
+  '<div class="card"><h2>📝 今日やること</h2>'+
+    (todayTasks.length?taskListHTML(todayTasks,true):'<div class="empty">今日のタスクはありません 🎉</div>')+'</div>'+
+  '<div class="card"><h2>📨 未送信一覧（送っていない案内）</h2>'+
+    (unsent.length?unsent.map(function(t){return '<div class="list-item"><div class="li-body"><div class="t">'+esc(t.label)+'</div>'+
+      '<div class="s">'+esc(t.ctx||'')+' ・ 期限 '+jdate(t.due)+'</div></div>'+
+      '<button class="btn sm ok" onclick="setTaskStatus(\''+t.id+'\',\'送信済み\')">送信済</button></div>';}).join(''):'<div class="empty">未送信の案内はありません ✅</div>')+'</div>'+
+  '<div class="card"><h2>🗓 今週やること</h2>'+
+    (weekTasks.length?taskListHTML(weekTasks,false):'<div class="empty">今週のタスクはありません</div>')+'</div>'+
+  '<div class="grid2">'+
+    weekEventCard('セミナー','seminar',evWeek('seminar'))+
+    weekEventCard('復習会','review',evWeek('review'))+
+    weekEventCard('Zoom','zoom',evWeek('zoom'))+
+    weekEventCard('YouTube','youtube',evWeek('youtube'))+'</div>'+
+  '<div class="card"><h2>💰 売上サマリー（毎週月曜チェック）</h2>'+
+    '<div class="grid2" style="gap:8px;">'+
+      '<div class="metric green"><div class="v">¥'+fmt(lastSales)+'</div><div class="l">先週売上</div></div>'+
+      '<div class="metric"><div class="v">¥'+fmt(monthSales)+'</div><div class="l">今月売上</div></div></div>'+
+    '<div class="metric '+(unpaid?'red':'green')+'" style="margin-top:8px;"><div class="v">'+unpaid+'件</div><div class="l">未入金件数</div></div></div>';
 }
 function weekEventCard(name,type,list){
-  return `<div class="card" style="margin-bottom:0;">
-    <h2><span class="c" style="background:${TYPES[type].color}"></span>今週の${name}</h2>
-    ${list.length?list.map(e=>`<div class="s muted" style="margin-bottom:4px;">${jdate(e.date)} ${e.time||''} ${esc(e.title||TYPES[type].label)}</div>`).join('')
-      :'<div class="muted">予定なし</div>'}
-  </div>`;
+  return '<div class="card" style="margin-bottom:0;">'+
+    '<h2><span class="c" style="background:'+TYPES[type].color+'"></span>今週の'+name+'</h2>'+
+    (list.length?list.map(function(e){return '<div class="s muted" style="margin-bottom:4px;">'+jdate(e.date)+' '+(e.time||'')+' '+esc(e.title||TYPES[type].label)+'</div>';}).join('')
+      :'<div class="muted">予定なし</div>')+'</div>';
 }
 function taskListHTML(list,showDate){
-  return list.sort((a,b)=>a.due.localeCompare(b.due)).map(t=>{
-    const done = t.status===last(t.options)||t.status==='完了';
-    return `<div class="list-item ${done?'done':''}">
-      <div class="chk ${done?'on':''}" onclick="toggleTaskDone('${t.id}')">${done?'✓':''}</div>
-      <div class="li-body">
-        <div class="t">${esc(t.label)}</div>
-        <div class="s">${esc(t.ctx||'')}${showDate?' ・ '+jdate(t.due):' ・ 期限 '+jdate(t.due)}</div>
-        ${statusSeg(t)}
-      </div>
-    </div>`;}).join('');
+  return list.sort(function(a,b){return a.due.localeCompare(b.due);}).map(function(t){
+    var done=t.status===last(t.options)||t.status==='完了';
+    return '<div class="list-item '+(done?'done':'')+'">'+
+      '<div class="chk '+(done?'on':'')+'" onclick="toggleTaskDone(\''+t.id+'\')">'+(done?'✓':'')+'</div>'+
+      '<div class="li-body"><div class="t">'+esc(t.label)+'</div>'+
+        '<div class="s">'+esc(t.ctx||'')+(showDate?' ・ '+jdate(t.due):' ・ 期限 '+jdate(t.due))+'</div>'+
+        statusSeg(t)+'</div></div>';}).join('');
 }
 function statusSeg(t){
-  return `<div class="status-seg">`+t.options.map(o=>{
-    const on=t.status===o;
-    const cls = on?(o==='作成済み'?'on warn':(o==='送信済み'||o==='完了'?'on ok':'on')):'';
-    return `<button class="${cls}" onclick="setTaskStatus('${t.id}','${o}')">${o}</button>`;
-  }).join('')+`</div>`;}
+  return '<div class="status-seg">'+t.options.map(function(o){
+    var on=t.status===o;
+    var cls=on?(o==='作成済み'?'on warn':((o==='送信済み'||o==='完了')?'on ok':'on')):'';
+    return '<button class="'+cls+'" onclick="setTaskStatus(\''+t.id+'\',\''+o+'\')">'+o+'</button>';
+  }).join('')+'</div>';
+}
 
-/* ============================================================
-   CALENDAR
-   ============================================================ */
-let calMonth = today().slice(0,7); // YYYY-MM
-let calMode='month';
+var calMonth=today().slice(0,7);
+var calMode='month';
+var calWeekBase=null;
 function renderCal(){
-  const el=document.getElementById('view-cal');
-  el.innerHTML=`
-    <div class="seg">
-      <button class="${calMode==='month'?'on':''}" onclick="calMode='month';renderCal()">月表示</button>
-      <button class="${calMode==='week'?'on':''}" onclick="calMode='week';renderCal()">週表示</button>
-    </div>
-    <div class="card">
-      <div class="cal-head">
-        <button class="btn sec sm" onclick="calNav(-1)">‹</button>
-        <strong id="calTitle"></strong>
-        <button class="btn sec sm" onclick="calNav(1)">›</button>
-      </div>
-      <div id="calBody"></div>
-    </div>
-    <div class="card">
-      <strong style="font-size:13px;">凡例</strong>
-      <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:8px;">
-        ${Object.entries(TYPES).map(([k,v])=>`<span class="tag ${k}">${v.label}</span>`).join('')}
-      </div>
-    </div>`;
+  var el=document.getElementById('view-cal');
+  el.innerHTML=
+    '<div class="seg">'+
+      '<button class="'+(calMode==='month'?'on':'')+'" onclick="calMode=\'month\';renderCal()">月表示</button>'+
+      '<button class="'+(calMode==='week'?'on':'')+'" onclick="calMode=\'week\';renderCal()">週表示</button></div>'+
+    '<div class="card"><div class="cal-head">'+
+        '<button class="btn sec sm" onclick="calNav(-1)">‹</button>'+
+        '<strong id="calTitle"></strong>'+
+        '<button class="btn sec sm" onclick="calNav(1)">›</button></div>'+
+      '<div id="calBody"></div></div>'+
+    '<div class="card"><strong style="font-size:13px;">凡例</strong>'+
+      '<div class="row" style="flex-wrap:wrap;gap:8px;margin-top:8px;">'+
+        Object.keys(TYPES).map(function(k){return '<span class="tag '+k+'">'+TYPES[k].label+'</span>';}).join('')+'</div></div>';
   if(calMode==='month')drawMonth();else drawWeek();
 }
 function calNav(n){
   if(calMode==='month'){
-    let[y,m]=calMonth.split('-').map(Number);m+=n;if(m<1){m=12;y--;}if(m>12){m=1;y++;}
-    calMonth=`${y}-${pad(m)}`;
+    var a=calMonth.split('-').map(Number);var y=a[0],m=a[1]+n;if(m<1){m=12;y--;}if(m>12){m=1;y++;}
+    calMonth=y+'-'+pad(m);
   }else{calWeekBase=addDays(calWeekBase||today(),n*7);}
   renderCal();
 }
 function evDots(date){
-  return DB.events.filter(e=>e.date===date).map(e=>`<i style="background:${TYPES[e.type].color}"></i>`).join('');
+  return DB.events.filter(function(e){return e.date===date;}).map(function(e){return '<i style="background:'+TYPES[e.type].color+'"></i>';}).join('');
 }
 function drawMonth(){
-  const[y,m]=calMonth.split('-').map(Number);
-  document.getElementById('calTitle').textContent=`${y}年${m}月`;
-  const first=new Date(y,m-1,1);const startWd=first.getDay();
-  const days=new Date(y,m,0).getDate();
-  let cells='';
-  for(let i=0;i<7;i++)cells+=`<div class="dow">${DOW[i]}</div>`;
-  for(let i=0;i<startWd;i++){const d=new Date(y,m-1,1-startWd+i);cells+=cellHTML(ymd(d),true);}
-  for(let d=1;d<=days;d++)cells+=cellHTML(`${y}-${pad(m)}-${pad(d)}`,false);
-  const total=startWd+days;const tail=(7-total%7)%7;
-  for(let i=1;i<=tail;i++){const d=new Date(y,m,i);cells+=cellHTML(ymd(d),true);}
-  document.getElementById('calBody').innerHTML=`<div class="cal-grid">${cells}</div>`;
+  var a=calMonth.split('-').map(Number);var y=a[0],m=a[1];
+  document.getElementById('calTitle').textContent=y+'年'+m+'月';
+  var first=new Date(y,m-1,1);var startWd=first.getDay();var days=new Date(y,m,0).getDate();
+  var cells='';
+  for(var i=0;i<7;i++)cells+='<div class="dow">'+DOW[i]+'</div>';
+  for(var k=0;k<startWd;k++){var d=new Date(y,m-1,1-startWd+k);cells+=cellHTML(ymd(d),true);}
+  for(var dd=1;dd<=days;dd++)cells+=cellHTML(y+'-'+pad(m)+'-'+pad(dd),false);
+  var total=startWd+days;var tail=(7-total%7)%7;
+  for(var t=1;t<=tail;t++){var d2=new Date(y,m,t);cells+=cellHTML(ymd(d2),true);}
+  document.getElementById('calBody').innerHTML='<div class="cal-grid">'+cells+'</div>';
 }
 function cellHTML(date,other){
-  const isToday=date===today();
-  return `<div class="cal-cell ${other?'other':''} ${isToday?'today':''}" onclick="dayDetail('${date}')">
-    <span class="dn">${parseD(date).getDate()}</span>
-    <div class="cal-dots">${evDots(date)}</div>
-  </div>`;
+  var isToday=date===today();
+  return '<div class="cal-cell '+(other?'other':'')+' '+(isToday?'today':'')+'" onclick="dayDetail(\''+date+'\')">'+
+    '<span class="dn">'+parseD(date).getDate()+'</span><div class="cal-dots">'+evDots(date)+'</div></div>';
 }
-let calWeekBase=null;
 function drawWeek(){
-  const w=weekRange(calWeekBase||today());
-  document.getElementById('calTitle').textContent=`${jdate(w.start)} 〜 ${jdate(w.end)}`;
-  let html='';
-  for(let i=0;i<7;i++){
-    const date=addDays(w.start,i);
-    const evs=DB.events.filter(e=>e.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-    html+=`<div style="border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;${date===today()?'border-color:var(--accent);':''}">
-      <div style="font-weight:700;font-size:13px;margin-bottom:6px;">${jdate(date)}${date===today()?' <span class="pill" style="background:var(--accent);color:#04293f;">今日</span>':''}</div>
-      ${evs.length?evs.map(e=>`<div class="row" style="margin-bottom:5px;cursor:pointer;" onclick="editEvent('${e.id}')">
-        <span class="tag ${e.type}">${TYPES[e.type].label}</span>
-        <span style="font-size:13px;">${e.time?e.time+' ':''}${esc(e.title||'')}</span></div>`).join('')
-        :'<div class="muted">予定なし</div>'}
-    </div>`;
+  var w=weekRange(calWeekBase||today());
+  document.getElementById('calTitle').textContent=jdate(w.start)+' 〜 '+jdate(w.end);
+  var html='';
+  for(var i=0;i<7;i++){
+    var date=addDays(w.start,i);
+    var evs=DB.events.filter(function(e){return e.date===date;}).sort(function(a,b){return (a.time||'').localeCompare(b.time||'');});
+    html+='<div style="border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;'+(date===today()?'border-color:var(--accent);':'')+'">'+
+      '<div style="font-weight:700;font-size:13px;margin-bottom:6px;">'+jdate(date)+(date===today()?' <span class="pill" style="background:var(--accent);color:#04293f;">今日</span>':'')+'</div>'+
+      (evs.length?evs.map(function(e){return '<div class="row" style="margin-bottom:5px;cursor:pointer;" onclick="editEvent(\''+e.id+'\')">'+
+        '<span class="tag '+e.type+'">'+TYPES[e.type].label+'</span>'+
+        '<span style="font-size:13px;">'+(e.time?e.time+' ':'')+esc(e.title||'')+'</span></div>';}).join('')
+        :'<div class="muted">予定なし</div>')+'</div>';
   }
   document.getElementById('calBody').innerHTML=html;
 }
 function dayDetail(date){
-  const evs=DB.events.filter(e=>e.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-  const tasks=DB.tasks.filter(t=>t.due===date);
-  openModal(`<h2>${jdate(date)}</h2>
-    <div class="k" style="margin-bottom:6px;">予定</div>
-    ${evs.length?evs.map(e=>`<div class="list-item"><div class="li-body">
-      <div class="t"><span class="tag ${e.type}">${TYPES[e.type].label}</span> ${esc(e.title||'')}</div>
-      <div class="s">${e.time||''} ${e.cohort?e.cohort+'期':''} ${e.session?e.session+'回目':''}</div></div>
-      <button class="btn sm sec" onclick="editEvent('${e.id}')">編集</button></div>`).join(''):'<div class="empty">予定なし</div>'}
-    <div class="divider"></div>
-    <div class="k" style="margin-bottom:6px;">この日のタスク</div>
-    ${tasks.length?tasks.map(t=>`<div class="s" style="margin-bottom:4px;">・${esc(t.label)} <span class="muted">[${t.status}]</span></div>`).join(''):'<div class="empty">タスクなし</div>'}
-    <button class="btn" style="margin-top:14px;" onclick="closeModal();openAdd('${date}')">＋ この日に予定を追加</button>`);
+  var evs=DB.events.filter(function(e){return e.date===date;}).sort(function(a,b){return (a.time||'').localeCompare(b.time||'');});
+  var tasks=DB.tasks.filter(function(t){return t.due===date;});
+  openModal('<h2>'+jdate(date)+'</h2>'+
+    '<div class="k" style="margin-bottom:6px;">予定</div>'+
+    (evs.length?evs.map(function(e){return '<div class="list-item"><div class="li-body">'+
+      '<div class="t"><span class="tag '+e.type+'">'+TYPES[e.type].label+'</span> '+esc(e.title||'')+'</div>'+
+      '<div class="s">'+(e.time||'')+' '+(e.cohort?e.cohort+'期':'')+' '+(e.session?e.session+'回目':'')+'</div></div>'+
+      '<button class="btn sm sec" onclick="editEvent(\''+e.id+'\')">編集</button></div>';}).join(''):'<div class="empty">予定なし</div>')+
+    '<div class="divider"></div>'+
+    '<div class="k" style="margin-bottom:6px;">この日のタスク</div>'+
+    (tasks.length?tasks.map(function(t){return '<div class="s" style="margin-bottom:4px;">・'+esc(t.label)+' <span class="muted">['+t.status+']</span></div>';}).join(''):'<div class="empty">タスクなし</div>')+
+    '<button class="btn" style="margin-top:14px;" onclick="closeModal();openAdd(\''+date+'\')">＋ この日に予定を追加</button>');
 }
 
-/* ============================================================
-   TASKS VIEW
-   ============================================================ */
-let taskFilter='open';
+var taskFilter='open';
 function renderTasks(){
-  const el=document.getElementById('view-task');
-  let list=[...DB.tasks];
-  if(taskFilter==='open')list=list.filter(t=>t.status!==last(t.options)&&t.status!=='完了');
-  if(taskFilter==='today')list=list.filter(t=>t.due<=today()&&t.status!==last(t.options)&&t.status!=='完了');
-  if(taskFilter==='done')list=list.filter(t=>t.status===last(t.options)||t.status==='完了');
-  list.sort((a,b)=>a.due.localeCompare(b.due));
-  el.innerHTML=`
-    <div class="seg">
-      <button class="${taskFilter==='today'?'on':''}" onclick="taskFilter='today';renderTasks()">今日</button>
-      <button class="${taskFilter==='open'?'on':''}" onclick="taskFilter='open';renderTasks()">未完了</button>
-      <button class="${taskFilter==='done'?'on':''}" onclick="taskFilter='done';renderTasks()">完了済</button>
-    </div>
-    <div class="card">
-      <h2>✅ タスク（${list.length}件）</h2>
-      ${list.length?taskListHTML(list,true):'<div class="empty">該当タスクはありません</div>'}
-    </div>
-    <div class="muted" style="text-align:center;font-size:12px;">セミナーを登録すると関連タスクが自動生成されます</div>`;
+  var el=document.getElementById('view-task');
+  var list=DB.tasks.slice();
+  if(taskFilter==='open')list=list.filter(function(t){return t.status!==last(t.options)&&t.status!=='完了';});
+  if(taskFilter==='today')list=list.filter(function(t){return t.due<=today()&&t.status!==last(t.options)&&t.status!=='完了';});
+  if(taskFilter==='done')list=list.filter(function(t){return t.status===last(t.options)||t.status==='完了';});
+  list.sort(function(a,b){return a.due.localeCompare(b.due);});
+  el.innerHTML=
+    '<div class="seg">'+
+      '<button class="'+(taskFilter==='today'?'on':'')+'" onclick="taskFilter=\'today\';renderTasks()">今日</button>'+
+      '<button class="'+(taskFilter==='open'?'on':'')+'" onclick="taskFilter=\'open\';renderTasks()">未完了</button>'+
+      '<button class="'+(taskFilter==='done'?'on':'')+'" onclick="taskFilter=\'done\';renderTasks()">完了済</button></div>'+
+    '<div class="card"><h2>✅ タスク（'+list.length+'件）</h2>'+
+      (list.length?taskListHTML(list,true):'<div class="empty">該当タスクはありません</div>')+'</div>'+
+    '<div class="muted" style="text-align:center;font-size:12px;">セミナーを登録すると関連タスクが自動生成されます</div>';
 }
 function toggleTaskDone(id){
-  const t=DB.tasks.find(x=>x.id===id);if(!t)return;
-  const done=last(t.options);
-  t.status = (t.status===done)?t.options[0]:done;
+  var t=DB.tasks.find(function(x){return x.id===id;});if(!t)return;
+  var done=last(t.options);
+  t.status=(t.status===done)?t.options[0]:done;
   save();render();
 }
-function setTaskStatus(id,s){const t=DB.tasks.find(x=>x.id===id);if(!t)return;t.status=s;save();render();
+function setTaskStatus(id,s){var t=DB.tasks.find(function(x){return x.id===id;});if(!t)return;t.status=s;save();render();
   if(s==='送信済み'||s==='完了')toast('更新しました ✅');}
 
-/* ============================================================
-   SALES
-   ============================================================ */
-function sumSales(a,b){return DB.patients.filter(p=>inRange(p.date,a,b)).reduce((s,p)=>s+(MARKS[p.mark]||0),0);}
+function sumSales(a,b){return DB.patients.filter(function(p){return inRange(p.date,a,b);}).reduce(function(s,p){return s+(MARKS[p.mark]||0);},0);}
 function renderSales(){
-  const T=today();const w=weekRange(T);const lw=lastWeekRange();const mr=monthRange(T);
-  const dayS=sumSales(T,T),weekS=sumSales(w.start,w.end),lastS=sumSales(lw.start,lw.end),monthS=sumSales(mr.start,mr.end);
-  const unpaid=DB.patients.filter(p=>!p.paid&&MARKS[p.mark]>0);
-  const recent=[...DB.patients].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,40);
-  const el=document.getElementById('view-sales');
-  el.innerHTML=`
-    <div class="card">
-      <h2>💰 売上集計</h2>
-      <div class="grid2" style="gap:8px;">
-        <div class="metric"><div class="v">¥${fmt(dayS)}</div><div class="l">本日</div></div>
-        <div class="metric"><div class="v">¥${fmt(weekS)}</div><div class="l">今週</div></div>
-        <div class="metric green"><div class="v">¥${fmt(lastS)}</div><div class="l">先週</div></div>
-        <div class="metric"><div class="v">¥${fmt(monthS)}</div><div class="l">今月</div></div>
-      </div>
-      <div class="metric ${unpaid.length?'red':'green'}" style="margin-top:8px;">
-        <div class="v">${unpaid.length}件 / ¥${fmt(unpaid.reduce((s,p)=>s+MARKS[p.mark],0))}</div><div class="l">未入金</div></div>
-    </div>
-    <div class="card">
-      <h2>＋ 施術を登録</h2>
-      <div class="field"><label>患者名</label><input id="pName" placeholder="例：田中様"></div>
-      <div class="field"><label>記号（金額）</label>
-        <select id="pMark"><option value="◯">◯ = 26,800円</option><option value="△">△ = 16,800円</option><option value="×">× = 0円</option></select></div>
-      <div class="grid2">
-        <div class="field"><label>日付</label><input type="date" id="pDate" value="${T}"></div>
-        <div class="field"><label>入金</label><select id="pPaid"><option value="yes">入金済</option><option value="no" selected>未入金</option></select></div>
-      </div>
-      <button class="btn" onclick="addPatient()">登録（カレンダーにも反映）</button>
-    </div>
-    <div class="card">
-      <h2>📋 施術履歴</h2>
-      ${recent.length?recent.map(p=>`<div class="list-item">
-        <div class="li-body"><div class="t">${esc(p.mark)} ${esc(p.name)} <span class="muted">¥${fmt(MARKS[p.mark])}</span></div>
-        <div class="s">${jdate(p.date)} ・ ${p.paid?'<span style="color:var(--ok)">入金済</span>':'<span style="color:var(--danger)">未入金</span>'}</div></div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn sm ${p.paid?'sec':'ok'}" onclick="togglePaid('${p.id}')">${p.paid?'未入金に':'入金済に'}</button>
-          <button class="btn sm danger" onclick="delPatient('${p.id}')">削除</button>
-        </div></div>`).join(''):'<div class="empty">まだ登録がありません</div>'}
-    </div>`;
+  var T=today();var w=weekRange(T);var lw=lastWeekRange();var mr=monthRange(T);
+  var dayS=sumSales(T,T),weekS=sumSales(w.start,w.end),lastS=sumSales(lw.start,lw.end),monthS=sumSales(mr.start,mr.end);
+  var unpaid=DB.patients.filter(function(p){return !p.paid&&MARKS[p.mark]>0;});
+  var recent=DB.patients.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).slice(0,40);
+  var el=document.getElementById('view-sales');
+  el.innerHTML=
+    '<div class="card"><h2>💰 売上集計</h2>'+
+      '<div class="grid2" style="gap:8px;">'+
+        '<div class="metric"><div class="v">¥'+fmt(dayS)+'</div><div class="l">本日</div></div>'+
+        '<div class="metric"><div class="v">¥'+fmt(weekS)+'</div><div class="l">今週</div></div>'+
+        '<div class="metric green"><div class="v">¥'+fmt(lastS)+'</div><div class="l">先週</div></div>'+
+        '<div class="metric"><div class="v">¥'+fmt(monthS)+'</div><div class="l">今月</div></div></div>'+
+      '<div class="metric '+(unpaid.length?'red':'green')+'" style="margin-top:8px;">'+
+        '<div class="v">'+unpaid.length+'件 / ¥'+fmt(unpaid.reduce(function(s,p){return s+MARKS[p.mark];},0))+'</div><div class="l">未入金</div></div></div>'+
+    '<div class="card"><h2>＋ 施術を登録</h2>'+
+      '<div class="field"><label>患者名</label><input id="pName" placeholder="例：田中様"></div>'+
+      '<div class="field"><label>記号（金額）</label>'+
+        '<select id="pMark"><option value="◯">◯ = 26,800円</option><option value="△">△ = 16,800円</option><option value="×">× = 0円</option></select></div>'+
+      '<div class="grid2">'+
+        '<div class="field"><label>日付</label><input type="date" id="pDate" value="'+T+'"></div>'+
+        '<div class="field"><label>入金</label><select id="pPaid"><option value="yes">入金済</option><option value="no" selected>未入金</option></select></div></div>'+
+      '<button class="btn" onclick="addPatient()">登録（カレンダーにも反映）</button></div>'+
+    '<div class="card"><h2>📋 施術履歴</h2>'+
+      (recent.length?recent.map(function(p){return '<div class="list-item">'+
+        '<div class="li-body"><div class="t">'+esc(p.mark)+' '+esc(p.name)+' <span class="muted">¥'+fmt(MARKS[p.mark])+'</span></div>'+
+        '<div class="s">'+jdate(p.date)+' ・ '+(p.paid?'<span style="color:var(--ok)">入金済</span>':'<span style="color:var(--danger)">未入金</span>')+'</div></div>'+
+        '<div style="display:flex;gap:6px;">'+
+          '<button class="btn sm '+(p.paid?'sec':'ok')+'" onclick="togglePaid(\''+p.id+'\')">'+(p.paid?'未入金に':'入金済に')+'</button>'+
+          '<button class="btn sm danger" onclick="delPatient(\''+p.id+'\')">削除</button></div></div>';}).join(''):'<div class="empty">まだ登録がありません</div>')+'</div>';
 }
 function addPatient(){
-  const name=val('pName').trim();if(!name){toast('患者名を入力してください');return;}
-  const mark=val('pMark'),date=val('pDate'),paid=val('pPaid')==='yes';
-  const id=uid();
-  DB.patients.push({id,name,mark,date,paid});
-  // also create treatment event on calendar
-  DB.events.push({id:'tx_'+id,linkPatient:id,type:'treatment',title:`${mark} ${name}`,date,time:''});
-  save();renderSales();toast('登録しました ✅');maybePush(DB.events.find(e=>e.id==='tx_'+id));
+  var name=val('pName').trim();if(!name){toast('患者名を入力してください');return;}
+  var mark=val('pMark'),date=val('pDate'),paid=val('pPaid')==='yes';
+  var id=uid();
+  DB.patients.push({id:id,name:name,mark:mark,date:date,paid:paid});
+  var ev={id:'tx_'+id,linkPatient:id,type:'treatment',title:mark+' '+name,date:date,time:''};
+  DB.events.push(ev);
+  save();renderSales();toast('登録しました ✅');maybePush(ev);
 }
-function togglePaid(id){const p=DB.patients.find(x=>x.id===id);p.paid=!p.paid;save();renderSales();}
+function togglePaid(id){var p=DB.patients.find(function(x){return x.id===id;});p.paid=!p.paid;save();renderSales();}
 function delPatient(id){
-  DB.patients=DB.patients.filter(p=>p.id!==id);
-  DB.events=DB.events.filter(e=>e.linkPatient!==id);
+  DB.patients=DB.patients.filter(function(p){return p.id!==id;});
+  DB.events=DB.events.filter(function(e){return e.linkPatient!==id;});
   save();renderSales();toast('削除しました');
 }
 
-/* ============================================================
-   LINE MESSAGE GENERATOR
-   ============================================================ */
-const LINE_T = {
-  preview:{name:'予習動画案内',f:c=>`【${c.cohort}期 予習動画のご案内】
-
-${c.cohort}期生の皆さま、お世話になっております。
-六層連動操法セミナー事務局です。
-
-次回セミナー（${c.dateJ}）に向けて、予習動画を配信いたしました。
-当日までに必ずご視聴のうえ、ご参加ください。
-
-▼予習動画
-${c.url||'（URLを貼り付け）'}
-
-ご不明点はこのトークへお気軽にご連絡ください。
-どうぞよろしくお願いいたします。`},
-  seminar:{name:'セミナー生案内',f:c=>`【${c.cohort}期 セミナーのご案内】
-
-${c.cohort}期生の皆さま、お世話になっております。
-いよいよ次回セミナーが近づいてまいりました。
-
-▼日時：${c.dateJ} ${c.time||''}
-▼会場：${c.place||'（会場を記入）'}
-▼持ち物：筆記用具・動きやすい服装
-
-当日お会いできるのを楽しみにしております。
-よろしくお願いいたします。`},
-  supporter:{name:'サポーター案内',f:c=>`【サポーターの皆さまへ】
-
-いつも運営にご協力いただきありがとうございます。
-次回 ${c.cohort}期セミナーのサポートをお願いいたします。
-
-▼日時：${c.dateJ} ${c.time||''}
-▼集合：${c.place||'（会場）'} ／ 開始30分前
-▼担当：当日ご案内します
-
-ご都合のほどお知らせください。
-よろしくお願いいたします。`},
-  review:{name:'復習会案内',f:c=>`【復習会のご案内】
-
-お世話になっております。
-復習会を下記の通り開催いたします。
-
-▼日時：${c.dateJ} ${c.time||''}
-▼形式：${c.place||'Zoom／対面'}
-
-復習したい内容があれば事前にお知らせください。
-皆さまのご参加をお待ちしております。`},
-  next_schedule:{name:'次期スケジュール案内',f:c=>`【次期セミナー スケジュールのご案内】
-
-お世話になっております。
-次期セミナーの日程が決定いたしましたのでご案内します。
-
-▼スケジュール
-${c.url||'（日程を記入）'}
-
-ご検討のほどよろしくお願いいたします。`},
-  next_apply:{name:'次期申込案内',f:c=>`【次期セミナー お申込みのご案内】
-
-${c.cohort}期セミナー、お疲れさまでした！
-継続して学びを深めたい方へ、次期セミナーのお申込みを承ります。
-
-▼お申込み
-${c.url||'（申込フォーム／案内）'}
-▼締切：${c.deadline||'（締切日）'}
-
-引き続きどうぞよろしくお願いいたします。`},
-  youtube:{name:'YouTube案内',f:c=>`【YouTube 新着動画のご案内】
-
-新しい動画を公開しました！
-
-▼テーマ：${c.title||'（テーマ）'}
-▼視聴：${c.url||'（動画URL）'}
-
-ぜひご覧ください。チャンネル登録・高評価もお願いします🙏`},
-  zoom:{name:'Zoom案内',f:c=>`【Zoomミーティングのご案内】
-
-下記の通りZoomを開催いたします。
-
-▼日時：${c.dateJ} ${c.time||''}
-▼テーマ：${c.title||'（テーマ）'}
-▼URL：${c.url||'（ZoomリンクをここにIDと共に）'}
-
-お時間になりましたらご参加ください。
-よろしくお願いいたします。`},
+var LINE_T = {
+  preview:{name:'予習動画案内',f:function(c){return '【'+c.cohort+'期 予習動画のご案内】\n\n'+c.cohort+'期生の皆さま、お世話になっております。\n六層連動操法セミナー事務局です。\n\n次回セミナー（'+c.dateJ+'）に向けて、予習動画を配信いたしました。\n当日までに必ずご視聴のうえ、ご参加ください。\n\n▼予習動画\n'+(c.url||'（URLを貼り付け）')+'\n\nご不明点はこのトークへお気軽にご連絡ください。\nどうぞよろしくお願いいたします。';}},
+  seminar:{name:'セミナー生案内',f:function(c){return '【'+c.cohort+'期 セミナーのご案内】\n\n'+c.cohort+'期生の皆さま、お世話になっております。\nいよいよ次回セミナーが近づいてまいりました。\n\n▼日時：'+c.dateJ+' '+(c.time||'')+'\n▼会場：'+(c.place||'（会場を記入）')+'\n▼持ち物：筆記用具・動きやすい服装\n\n当日お会いできるのを楽しみにしております。\nよろしくお願いいたします。';}},
+  supporter:{name:'サポーター案内',f:function(c){return '【サポーターの皆さまへ】\n\nいつも運営にご協力いただきありがとうございます。\n次回 '+c.cohort+'期セミナーのサポートをお願いいたします。\n\n▼日時：'+c.dateJ+' '+(c.time||'')+'\n▼集合：'+(c.place||'（会場）')+' ／ 開始30分前\n▼担当：当日ご案内します\n\nご都合のほどお知らせください。\nよろしくお願いいたします。';}},
+  review:{name:'復習会案内',f:function(c){return '【復習会のご案内】\n\nお世話になっております。\n復習会を下記の通り開催いたします。\n\n▼日時：'+c.dateJ+' '+(c.time||'')+'\n▼形式：'+(c.place||'Zoom／対面')+'\n\n復習したい内容があれば事前にお知らせください。\n皆さまのご参加をお待ちしております。';}},
+  next_schedule:{name:'次期スケジュール案内',f:function(c){return '【次期セミナー スケジュールのご案内】\n\nお世話になっております。\n次期セミナーの日程が決定いたしましたのでご案内します。\n\n▼スケジュール\n'+(c.url||'（日程を記入）')+'\n\nご検討のほどよろしくお願いいたします。';}},
+  next_apply:{name:'次期申込案内',f:function(c){return '【次期セミナー お申込みのご案内】\n\n'+c.cohort+'期セミナー、お疲れさまでした！\n継続して学びを深めたい方へ、次期セミナーのお申込みを承ります。\n\n▼お申込み\n'+(c.url||'（申込フォーム／案内）')+'\n▼締切：'+(c.deadline||'（締切日）')+'\n\n引き続きどうぞよろしくお願いいたします。';}},
+  youtube:{name:'YouTube案内',f:function(c){return '【YouTube 新着動画のご案内】\n\n新しい動画を公開しました！\n\n▼テーマ：'+(c.title||'（テーマ）')+'\n▼視聴：'+(c.url||'（動画URL）')+'\n\nぜひご覧ください。チャンネル登録・高評価もお願いします🙏';}},
+  zoom:{name:'Zoom案内',f:function(c){return '【Zoomミーティングのご案内】\n\n下記の通りZoomを開催いたします。\n\n▼日時：'+c.dateJ+' '+(c.time||'')+'\n▼テーマ：'+(c.title||'（テーマ）')+'\n▼URL：'+(c.url||'（ZoomリンクをここにIDと共に）')+'\n\nお時間になりましたらご参加ください。\nよろしくお願いいたします。';}}
 };
-let lineSel='preview';
+var lineSel='preview';
+var lcache={};
 function renderLine(){
-  const el=document.getElementById('view-line');
-  el.innerHTML=`
-    <div class="card">
-      <h2>💬 LINE文面 自動生成</h2>
-      <div class="field"><label>文面の種類</label>
-        <select id="lineType" onchange="lineSel=this.value;renderLine()">
-          ${Object.entries(LINE_T).map(([k,v])=>`<option value="${k}" ${k===lineSel?'selected':''}>${v.name}</option>`).join('')}
-        </select></div>
-      <div class="grid2">
-        <div class="field"><label>期</label><input id="lc_cohort" placeholder="例：8" value="${lcache.cohort||''}"></div>
-        <div class="field"><label>日付</label><input type="date" id="lc_date" value="${lcache.date||today()}"></div>
-      </div>
-      <div class="grid2">
-        <div class="field"><label>時間</label><input id="lc_time" placeholder="13:00〜" value="${lcache.time||''}"></div>
-        <div class="field"><label>会場/形式</label><input id="lc_place" placeholder="任意" value="${lcache.place||''}"></div>
-      </div>
-      <div class="field"><label>テーマ/タイトル（YouTube・Zoom等）</label><input id="lc_title" placeholder="任意" value="${lcache.title||''}"></div>
-      <div class="field"><label>URL / 補足</label><input id="lc_url" placeholder="動画・申込・Zoom URLなど" value="${lcache.url||''}"></div>
-      <div class="grid2">
-        <div class="field"><label>締切（申込）</label><input id="lc_deadline" placeholder="任意" value="${lcache.deadline||''}"></div>
-        <div class="field" style="display:flex;align-items:flex-end;"><button class="btn" onclick="genLine()">文面を生成</button></div>
-      </div>
-    </div>
-    <div class="card">
-      <h2>生成された文面</h2>
-      <textarea id="lineOut" placeholder="「文面を生成」を押してください">${lcache.out||''}</textarea>
-      <div class="grid2" style="margin-top:8px;">
-        <button class="btn ok" onclick="copyLine()">📋 コピー</button>
-        <button class="btn sec" onclick="shareLine()">他アプリで開く</button>
-      </div>
-      <small class="hint">コピー後、LINEのトークに貼り付けて送信してください。</small>
-    </div>`;
+  var el=document.getElementById('view-line');
+  el.innerHTML=
+    '<div class="card"><h2>💬 LINE文面 自動生成</h2>'+
+      '<div class="field"><label>文面の種類</label>'+
+        '<select id="lineType" onchange="lineSel=this.value;renderLine()">'+
+          Object.keys(LINE_T).map(function(k){return '<option value="'+k+'" '+(k===lineSel?'selected':'')+'>'+LINE_T[k].name+'</option>';}).join('')+'</select></div>'+
+      '<div class="grid2">'+
+        '<div class="field"><label>期</label><input id="lc_cohort" placeholder="例：8" value="'+esc(lcache.cohort||'')+'"></div>'+
+        '<div class="field"><label>日付</label><input type="date" id="lc_date" value="'+(lcache.date||today())+'"></div></div>'+
+      '<div class="grid2">'+
+        '<div class="field"><label>時間</label><input id="lc_time" placeholder="13:00〜" value="'+esc(lcache.time||'')+'"></div>'+
+        '<div class="field"><label>会場/形式</label><input id="lc_place" placeholder="任意" value="'+esc(lcache.place||'')+'"></div></div>'+
+      '<div class="field"><label>テーマ/タイトル（YouTube・Zoom等）</label><input id="lc_title" placeholder="任意" value="'+esc(lcache.title||'')+'"></div>'+
+      '<div class="field"><label>URL / 補足</label><input id="lc_url" placeholder="動画・申込・Zoom URLなど" value="'+esc(lcache.url||'')+'"></div>'+
+      '<div class="grid2">'+
+        '<div class="field"><label>締切（申込）</label><input id="lc_deadline" placeholder="任意" value="'+esc(lcache.deadline||'')+'"></div>'+
+        '<div class="field" style="display:flex;align-items:flex-end;"><button class="btn" onclick="genLine()">文面を生成</button></div></div></div>'+
+    '<div class="card"><h2>生成された文面</h2>'+
+      '<textarea id="lineOut" placeholder="「文面を生成」を押してください">'+esc(lcache.out||'')+'</textarea>'+
+      '<div class="grid2" style="margin-top:8px;">'+
+        '<button class="btn ok" onclick="copyLine()">📋 コピー</button>'+
+        '<button class="btn sec" onclick="shareLine()">他アプリで開く</button></div>'+
+      '<small class="hint">コピー後、LINEのトークに貼り付けて送信してください。</small></div>';
 }
-let lcache={};
 function genLine(){
-  const c={cohort:val('lc_cohort'),date:val('lc_date'),time:val('lc_time'),place:val('lc_place'),
+  var c={cohort:val('lc_cohort'),date:val('lc_date'),time:val('lc_time'),place:val('lc_place'),
     title:val('lc_title'),url:val('lc_url'),deadline:val('lc_deadline')};
-  c.dateJ = c.date?jdate(c.date):'（日付）';
-  lcache={...c,out:LINE_T[lineSel].f(c)};
-  document.getElementById('lineOut').value=lcache.out;
+  c.dateJ=c.date?jdate(c.date):'（日付）';
+  c.out=LINE_T[lineSel].f(c);lcache=c;
+  document.getElementById('lineOut').value=c.out;
   toast('生成しました ✍️');
 }
 function copyLine(){
-  const v=document.getElementById('lineOut').value;
+  var v=document.getElementById('lineOut').value;
   if(!v){toast('先に文面を生成してください');return;}
-  navigator.clipboard.writeText(v).then(()=>toast('コピーしました 📋')).catch(()=>{
-    const t=document.getElementById('lineOut');t.select();document.execCommand('copy');toast('コピーしました 📋');});
+  function fallbackCopy(){var t=document.getElementById('lineOut');t.select();try{document.execCommand('copy');toast('コピーしました 📋');}catch(e){toast('コピーできませんでした');}}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(v).then(function(){toast('コピーしました 📋');}).catch(function(){fallbackCopy();});
+  }else fallbackCopy();
 }
 function shareLine(){
-  const v=document.getElementById('lineOut').value;if(!v){toast('先に文面を生成してください');return;}
-  if(navigator.share)navigator.share({text:v}).catch(()=>{});else copyLine();
+  var v=document.getElementById('lineOut').value;if(!v){toast('先に文面を生成してください');return;}
+  if(navigator.share)navigator.share({text:v}).catch(function(){});else copyLine();
 }
 
-/* ============================================================
-   MORE: YouTube / Zoom / Settings / Google
-   ============================================================ */
 function renderMore(){
-  const T=today();
-  const yts=DB.events.filter(e=>e.type==='youtube').sort((a,b)=>b.date.localeCompare(a.date));
-  const zms=DB.events.filter(e=>e.type==='zoom').sort((a,b)=>b.date.localeCompare(a.date));
-  const el=document.getElementById('view-more');
-  el.innerHTML=`
-    <div class="card">
-      <h2><span class="c" style="background:${TYPES.youtube.color}"></span>YouTube管理（月1）</h2>
-      <button class="btn sec sm" style="margin-bottom:10px;" onclick="openAdd(null,'youtube')">＋ YouTube予定を追加</button>
-      ${yts.length?yts.map(e=>ytCard(e)).join(''):'<div class="empty">まだありません</div>'}
-    </div>
-    <div class="card">
-      <h2><span class="c" style="background:${TYPES.zoom.color}"></span>Zoom管理（月3）</h2>
-      <button class="btn sec sm" style="margin-bottom:10px;" onclick="openAdd(null,'zoom')">＋ Zoom予定を追加</button>
-      ${zms.length?zms.map(e=>zmCard(e)).join(''):'<div class="empty">まだありません</div>'}
-    </div>
-    <div class="card">
-      <h2>☁️ Googleカレンダー連携</h2>
-      <div id="gStatus" style="margin-bottom:10px;"></div>
-      <div class="grid2">
-        <button class="btn" onclick="gConnect()">接続 / 認証</button>
-        <button class="btn sec" onclick="gSyncAll()">全予定を同期</button>
-      </div>
-      <button class="btn sec" style="margin-top:8px;" onclick="gPull()">Googleから取り込む</button>
-      <div class="divider"></div>
-      <div class="field"><label>OAuth クライアントID</label><input id="setClientId" value="${esc(DB.settings.clientId)}" placeholder="xxxx.apps.googleusercontent.com"></div>
-      <div class="field"><label>APIキー</label><input id="setApiKey" value="${esc(DB.settings.apiKey)}" placeholder="AIza..."></div>
-      <div class="field"><label>カレンダーID</label><input id="setCalId" value="${esc(DB.settings.calendarId||'primary')}" placeholder="primary"></div>
-      <button class="btn ok" onclick="saveSettings()">設定を保存</button>
-      <small class="hint">連携の手順は同梱の「連携セットアップ手順」をご覧ください。Google連携はURL公開時のみ動作します（端末内のオフライン機能は連携なしで使えます）。</small>
-    </div>
-    <div class="card">
-      <h2>🔧 データ管理</h2>
-      <div class="grid2">
-        <button class="btn sec" onclick="exportData()">バックアップ書出</button>
-        <button class="btn sec" onclick="document.getElementById('imp').click()">復元読込</button>
-      </div>
-      <input type="file" id="imp" accept="application/json" style="display:none" onchange="importData(this)">
-      <small class="hint">データはこの端末に保存されます。機種変更前にバックアップ書出を推奨。</small>
-    </div>`;
+  var yts=DB.events.filter(function(e){return e.type==='youtube';}).sort(function(a,b){return b.date.localeCompare(a.date);});
+  var zms=DB.events.filter(function(e){return e.type==='zoom';}).sort(function(a,b){return b.date.localeCompare(a.date);});
+  var el=document.getElementById('view-more');
+  el.innerHTML=
+    '<div class="card"><h2><span class="c" style="background:'+TYPES.youtube.color+'"></span>YouTube管理（月1）</h2>'+
+      '<button class="btn sec sm" style="margin-bottom:10px;" onclick="openAdd(null,\'youtube\')">＋ YouTube予定を追加</button>'+
+      (yts.length?yts.map(ytCard).join(''):'<div class="empty">まだありません</div>')+'</div>'+
+    '<div class="card"><h2><span class="c" style="background:'+TYPES.zoom.color+'"></span>Zoom管理（月3）</h2>'+
+      '<button class="btn sec sm" style="margin-bottom:10px;" onclick="openAdd(null,\'zoom\')">＋ Zoom予定を追加</button>'+
+      (zms.length?zms.map(zmCard).join(''):'<div class="empty">まだありません</div>')+'</div>'+
+    '<div class="card"><h2>☁️ Googleカレンダー連携</h2>'+
+      '<div id="gStatus" style="margin-bottom:10px;"></div>'+
+      '<div class="grid2">'+
+        '<button class="btn" onclick="gConnect()">接続 / 認証</button>'+
+        '<button class="btn sec" onclick="gSyncAll()">全予定を同期</button></div>'+
+      '<button class="btn sec" style="margin-top:8px;" onclick="gPull()">Googleから取り込む</button>'+
+      '<div class="divider"></div>'+
+      '<div class="field"><label>OAuth クライアントID</label><input id="setClientId" value="'+esc(DB.settings.clientId)+'" placeholder="xxxx.apps.googleusercontent.com"></div>'+
+      '<div class="field"><label>APIキー</label><input id="setApiKey" value="'+esc(DB.settings.apiKey)+'" placeholder="AIza..."></div>'+
+      '<div class="field"><label>カレンダーID</label><input id="setCalId" value="'+esc(DB.settings.calendarId||'primary')+'" placeholder="primary"></div>'+
+      '<button class="btn ok" onclick="saveSettings()">設定を保存</button>'+
+      '<small class="hint">連携はURL公開時のみ動作します（端末内のオフライン機能は連携なしで使えます）。</small></div>'+
+    '<div class="card"><h2>🔧 データ管理</h2>'+
+      '<div class="grid2">'+
+        '<button class="btn sec" onclick="exportData()">バックアップ書出</button>'+
+        '<button class="btn sec" onclick="document.getElementById(\'imp\').click()">復元読込</button></div>'+
+      '<input type="file" id="imp" accept="application/json" style="display:none" onchange="importData(this)">'+
+      '<small class="hint">データはこの端末に保存されます。機種変更前にバックアップ書出を推奨。</small></div>';
   updateGStatus();
 }
 function ytCard(e){
-  const c=e.checks||{};
-  const items=[['shoot','撮影'],['edit','編集依頼'],['thumb','サムネ作成'],['publish','公開'],['fb','Facebook告知']];
-  return `<div style="border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;">
-    <div class="row" style="justify-content:space-between;">
-      <strong style="font-size:13px;">${esc(e.title||'YouTube')}</strong>
-      <button class="btn sm sec" onclick="editEvent('${e.id}')">編集</button></div>
-    <div class="s muted">撮影 ${e.date?jdate(e.date):'-'} ／ 編集依頼 ${e.editDate?jdate(e.editDate):'-'} ／ 公開 ${e.publishDate?jdate(e.publishDate):'-'}</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
-      ${items.map(([k,l])=>`<button class="btn sm ${c[k]?'ok':'sec'}" onclick="toggleCheck('${e.id}','${k}')">${c[k]?'✓ ':''}${l}</button>`).join('')}
-    </div></div>`;
+  var c=e.checks||{};
+  var items=[['shoot','撮影'],['edit','編集依頼'],['thumb','サムネ作成'],['publish','公開'],['fb','Facebook告知']];
+  return '<div style="border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;">'+
+    '<div class="row" style="justify-content:space-between;">'+
+      '<strong style="font-size:13px;">'+esc(e.title||'YouTube')+'</strong>'+
+      '<button class="btn sm sec" onclick="editEvent(\''+e.id+'\')">編集</button></div>'+
+    '<div class="s muted">撮影 '+(e.date?jdate(e.date):'-')+' ／ 編集依頼 '+(e.editDate?jdate(e.editDate):'-')+' ／ 公開 '+(e.publishDate?jdate(e.publishDate):'-')+'</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">'+
+      items.map(function(it){return '<button class="btn sm '+(c[it[0]]?'ok':'sec')+'" onclick="toggleCheck(\''+e.id+'\',\''+it[0]+'\')">'+(c[it[0]]?'✓ ':'')+it[1]+'</button>';}).join('')+'</div></div>';
 }
 function zmCard(e){
-  const c=e.checks||{};
-  const items=[['invite','案内送信'],['held','開催済み'],['archive','アーカイブ送信']];
-  return `<div style="border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;">
-    <div class="row" style="justify-content:space-between;">
-      <strong style="font-size:13px;">${esc(e.title||'Zoom')}</strong>
-      <button class="btn sm sec" onclick="editEvent('${e.id}')">編集</button></div>
-    <div class="s muted">${jdate(e.date)} ${e.time||''} ／ ${esc(e.participants||'参加者未設定')}</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
-      ${items.map(([k,l])=>`<button class="btn sm ${c[k]?'ok':'sec'}" onclick="toggleCheck('${e.id}','${k}')">${c[k]?'✓ ':''}${l}</button>`).join('')}
-    </div></div>`;
+  var c=e.checks||{};
+  var items=[['invite','案内送信'],['held','開催済み'],['archive','アーカイブ送信']];
+  return '<div style="border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;">'+
+    '<div class="row" style="justify-content:space-between;">'+
+      '<strong style="font-size:13px;">'+esc(e.title||'Zoom')+'</strong>'+
+      '<button class="btn sm sec" onclick="editEvent(\''+e.id+'\')">編集</button></div>'+
+    '<div class="s muted">'+jdate(e.date)+' '+(e.time||'')+' ／ '+esc(e.participants||'参加者未設定')+'</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">'+
+      items.map(function(it){return '<button class="btn sm '+(c[it[0]]?'ok':'sec')+'" onclick="toggleCheck(\''+e.id+'\',\''+it[0]+'\')">'+(c[it[0]]?'✓ ':'')+it[1]+'</button>';}).join('')+'</div></div>';
 }
-function toggleCheck(id,k){const e=DB.events.find(x=>x.id===id);e.checks=e.checks||{};e.checks[k]=!e.checks[k];save();renderMore();}
+function toggleCheck(id,k){var e=DB.events.find(function(x){return x.id===id;});e.checks=e.checks||{};e.checks[k]=!e.checks[k];save();renderMore();}
 function saveSettings(){
   DB.settings.clientId=val('setClientId').trim();
   DB.settings.apiKey=val('setApiKey').trim();
@@ -738,111 +547,104 @@ function saveSettings(){
   save();toast('設定を保存しました ✅');
 }
 function exportData(){
-  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=`rokuso_backup_${today()}.json`;a.click();toast('書き出しました');
+  var blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='rokuso_backup_'+today()+'.json';a.click();toast('書き出しました');
 }
 function importData(inp){
-  const f=inp.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{DB=JSON.parse(r.result);save();toast('復元しました ✅');render();}catch(e){toast('読込に失敗しました');}};
+  var f=inp.files[0];if(!f)return;var r=new FileReader();
+  r.onload=function(){try{DB=JSON.parse(r.result);save();toast('復元しました ✅');render();}catch(e){toast('読込に失敗しました');}};
   r.readAsText(f);
 }
 
-/* ============================================================
-   ADD / EDIT EVENT MODAL
-   ============================================================ */
 function openAdd(date,forceType){
-  const T=date||today();
+  var T=date||today();
   openModal(eventForm({type:forceType||'seminar',date:T,time:'',title:'',cohort:'',session:'',participants:'',editDate:'',publishDate:''},false));
 }
 function editEvent(id){
-  const e=DB.events.find(x=>x.id===id);if(!e)return;
+  var e=DB.events.find(function(x){return x.id===id;});if(!e)return;
   openModal(eventForm(e,true));
 }
 function eventForm(e,isEdit){
-  return `<h2>${isEdit?'予定を編集':'予定を追加'}</h2>
-    <div class="field"><label>種類</label>
-      <select id="ev_type" onchange="onTypeChange()">
-        ${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${k===e.type?'selected':''}>${v.label}</option>`).join('')}
-      </select></div>
-    <div class="field"><label>タイトル</label><input id="ev_title" value="${esc(e.title||'')}" placeholder="任意"></div>
-    <div class="grid2">
-      <div class="field"><label>日付${''}</label><input type="date" id="ev_date" value="${e.date||today()}"></div>
-      <div class="field"><label>時間</label><input id="ev_time" value="${esc(e.time||'')}" placeholder="13:00〜"></div>
-    </div>
-    <div id="ev_seminar" style="display:none;">
-      <div class="grid2">
-        <div class="field"><label>期（数字）</label><input id="ev_cohort" inputmode="numeric" value="${esc(e.cohort||'')}" placeholder="例：8"></div>
-        <div class="field"><label>回数（1〜6）</label><input id="ev_session" inputmode="numeric" value="${esc(e.session||'')}" placeholder="例：1"></div>
-      </div>
-      <small class="hint">登録すると 11日前/3日前/サポーター(7〜9期)/5回目/6回目/資料送付 のタスクを自動生成します。</small>
-    </div>
-    <div id="ev_yt" style="display:none;">
-      <div class="grid2">
-        <div class="field"><label>編集依頼日</label><input type="date" id="ev_editDate" value="${e.editDate||''}"></div>
-        <div class="field"><label>公開日</label><input type="date" id="ev_publishDate" value="${e.publishDate||''}"></div>
-      </div>
-    </div>
-    <div id="ev_zoom" style="display:none;">
-      <div class="field"><label>参加者</label><input id="ev_participants" value="${esc(e.participants||'')}" placeholder="例：8期生 全員"></div>
-    </div>
-    <button class="btn" onclick="saveEvent('${isEdit?e.id:''}')">${isEdit?'更新':'登録'}</button>
-    ${isEdit?`<button class="btn danger" style="margin-top:8px;" onclick="deleteEvent('${e.id}')">削除</button>`:''}`;
+  return '<h2>'+(isEdit?'予定を編集':'予定を追加')+'</h2>'+
+    '<div class="field"><label>種類</label>'+
+      '<select id="ev_type" onchange="onTypeChange()">'+
+        Object.keys(TYPES).map(function(k){return '<option value="'+k+'" '+(k===e.type?'selected':'')+'>'+TYPES[k].label+'</option>';}).join('')+'</select></div>'+
+    '<div class="field"><label>タイトル</label><input id="ev_title" value="'+esc(e.title||'')+'" placeholder="任意"></div>'+
+    '<div class="grid2">'+
+      '<div class="field"><label>日付</label><input type="date" id="ev_date" value="'+(e.date||today())+'"></div>'+
+      '<div class="field"><label>時間</label><input id="ev_time" value="'+esc(e.time||'')+'" placeholder="13:00〜"></div></div>'+
+    '<div id="ev_seminar" style="display:none;">'+
+      '<div class="grid2">'+
+        '<div class="field"><label>期（数字）</label><input id="ev_cohort" inputmode="numeric" value="'+esc(e.cohort||'')+'" placeholder="例：8"></div>'+
+        '<div class="field"><label>回数（1〜6）</label><input id="ev_session" inputmode="numeric" value="'+esc(e.session||'')+'" placeholder="例：1"></div></div>'+
+      '<small class="hint">登録すると 11日前/3日前/サポーター(7〜9期)/5回目/6回目/資料送付 のタスクを自動生成します。</small></div>'+
+    '<div id="ev_yt" style="display:none;">'+
+      '<div class="grid2">'+
+        '<div class="field"><label>編集依頼日</label><input type="date" id="ev_editDate" value="'+(e.editDate||'')+'"></div>'+
+        '<div class="field"><label>公開日</label><input type="date" id="ev_publishDate" value="'+(e.publishDate||'')+'"></div></div></div>'+
+    '<div id="ev_zoom" style="display:none;">'+
+      '<div class="field"><label>参加者</label><input id="ev_participants" value="'+esc(e.participants||'')+'" placeholder="例：8期生 全員"></div></div>'+
+    '<button class="btn" onclick="saveEvent(\''+(isEdit?e.id:'')+'\')">'+(isEdit?'更新':'登録')+'</button>'+
+    (isEdit?'<button class="btn danger" style="margin-top:8px;" onclick="deleteEvent(\''+e.id+'\')">削除</button>':'');
 }
 function onTypeChange(){
-  const t=val('ev_type');
-  document.getElementById('ev_seminar').style.display = t==='seminar'?'block':'none';
-  document.getElementById('ev_yt').style.display = t==='youtube'?'block':'none';
-  document.getElementById('ev_zoom').style.display = t==='zoom'?'block':'none';
+  var t=val('ev_type');
+  document.getElementById('ev_seminar').style.display=t==='seminar'?'block':'none';
+  document.getElementById('ev_yt').style.display=t==='youtube'?'block':'none';
+  document.getElementById('ev_zoom').style.display=t==='zoom'?'block':'none';
 }
 function saveEvent(id){
-  const type=val('ev_type');
-  const o={type,title:val('ev_title').trim(),date:val('ev_date'),time:val('ev_time').trim()};
+  var type=val('ev_type');
+  var existing=id?DB.events.find(function(e){return e.id===id;}):null;
+  var o={type:type,title:val('ev_title').trim(),date:val('ev_date'),time:val('ev_time').trim()};
   if(type==='seminar'){o.cohort=val('ev_cohort').trim();o.session=val('ev_session').trim();}
-  if(type==='youtube'){o.editDate=val('ev_editDate');o.publishDate=val('ev_publishDate');o.checks=(id&&DB.events.find(e=>e.id===id)?.checks)||{};}
-  if(type==='zoom'){o.participants=val('ev_participants').trim();o.checks=(id&&DB.events.find(e=>e.id===id)?.checks)||{};}
-  let ev;
-  if(id){ev=DB.events.find(e=>e.id===id);Object.assign(ev,o);}
-  else{ev={id:uid(),...o};DB.events.push(ev);}
+  if(type==='youtube'){o.editDate=val('ev_editDate');o.publishDate=val('ev_publishDate');o.checks=(existing&&existing.checks)||{};}
+  if(type==='zoom'){o.participants=val('ev_participants').trim();o.checks=(existing&&existing.checks)||{};}
+  var ev,k;
+  if(id){ev=existing;for(k in o)ev[k]=o[k];}
+  else{ev={id:uid()};for(k in o)ev[k]=o[k];DB.events.push(ev);}
   if(type==='seminar')regenSeminarTasks(ev);
   save();closeModal();render();toast(id?'更新しました ✅':'登録しました ✅');
   maybePush(ev);
 }
 function deleteEvent(id){
-  const e=DB.events.find(x=>x.id===id);
-  DB.events=DB.events.filter(x=>x.id!==id);
-  DB.tasks=DB.tasks.filter(t=>t.eventId!==id);
-  if(e&&e.linkPatient)DB.patients=DB.patients.filter(p=>p.id!==e.linkPatient);
+  var e=DB.events.find(function(x){return x.id===id;});
+  DB.events=DB.events.filter(function(x){return x.id!==id;});
+  DB.tasks=DB.tasks.filter(function(t){return t.eventId!==id;});
+  if(e&&e.linkPatient)DB.patients=DB.patients.filter(function(p){return p.id!==e.linkPatient;});
   if(e&&e.gid)gDelete(e.gid);
   save();closeModal();render();toast('削除しました');
 }
 
-/* ============================================================
-   MODAL / UTIL
-   ============================================================ */
 function openModal(html){document.getElementById('modal').innerHTML=html;document.getElementById('modalBg').classList.add('on');
   if(document.getElementById('ev_type'))onTypeChange();}
 function closeModal(){document.getElementById('modalBg').classList.remove('on');}
-function val(id){const e=document.getElementById(id);return e?e.value:'';}
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function val(id){var e=document.getElementById(id);return e?e.value:'';}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function fmt(n){return (n||0).toLocaleString('ja-JP');}
 function last(a){return a[a.length-1];}
 
-/* ============================================================
-   GOOGLE CALENDAR SYNC  (GIS + gapi)
-   ============================================================ */
-let gapiReady=false,gisReady=false,tokenClient=null,gToken=null;
+/* ===== Google Calendar sync ===== */
+var gapiReady=false,gisReady=false,tokenClient=null,gToken=null,gLastError='';
+function gErrMsg(e){try{
+  if(e&&e.result&&e.result.error)return '['+e.result.error.code+'] '+e.result.error.message;
+  if(e&&e.body){try{var b=JSON.parse(e.body);if(b.error)return '['+(b.error.code||'')+'] '+(b.error.message||e.body);}catch(_){return String(e.body).slice(0,180);}}
+  if(e&&e.status)return 'HTTP '+e.status+(e.statusText?' '+e.statusText:'');
+  if(e&&e.message)return e.message;
+  return String(e).slice(0,180);
+}catch(_){return '不明なエラー';}}
 function loadGoogle(){
   if(document.getElementById('gapijs'))return;
-  const s1=document.createElement('script');s1.id='gapijs';s1.src='https://apis.google.com/js/api.js';
-  s1.onload=()=>gapi.load('client',()=>{gapiReady=true;updateGStatus();});
+  var s1=document.createElement('script');s1.id='gapijs';s1.src='https://apis.google.com/js/api.js';
+  s1.onload=function(){gapi.load('client',function(){gapiReady=true;updateGStatus();});};
   document.head.appendChild(s1);
-  const s2=document.createElement('script');s2.src='https://accounts.google.com/gsi/client';
-  s2.onload=()=>{gisReady=true;updateGStatus();};
+  var s2=document.createElement('script');s2.src='https://accounts.google.com/gsi/client';
+  s2.onload=function(){gisReady=true;updateGStatus();};
   document.head.appendChild(s2);
 }
-async function gInitClient(){
-  await gapi.client.init({apiKey:DB.settings.apiKey,
+function gInitClient(){
+  return gapi.client.init({apiKey:DB.settings.apiKey,
     discoveryDocs:['https://www.googleapis.com/discovery/v2/apis/calendar/v3/rest']});
 }
 function gConnect(){
@@ -851,92 +653,99 @@ function gConnect(){
   tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:DB.settings.clientId,
     scope:'https://www.googleapis.com/auth/calendar',
-    callback:async(resp)=>{
+    callback:function(resp){
       if(resp.error){toast('認証に失敗しました');return;}
-      gToken=resp;await gInitClient();updateGStatus();toast('Google連携しました ✅');
+      gToken=resp;
+      gInitClient().then(function(){gLastError='';updateGStatus();toast('Google連携しました ✅');})
+        .catch(function(e){gLastError=gErrMsg(e);updateGStatus();toast('初期化失敗：'+gLastError);});
     }});
   tokenClient.requestAccessToken({prompt:gToken?'':'consent'});
 }
 function gConnected(){return !!gToken;}
 function updateGStatus(){
-  const dot=document.getElementById('gdot');
+  var dot=document.getElementById('gdot');
   if(dot)dot.textContent=gConnected()?'🟢':'';
-  const s=document.getElementById('gStatus');
-  if(s)s.innerHTML=gConnected()?'<span class="gstat on">接続済み</span>':'<span class="gstat off">未接続（オフラインで利用中）</span>';
+  var s=document.getElementById('gStatus');
+  if(s)s.innerHTML=(gConnected()?'<span class="gstat on">接続済み</span>':'<span class="gstat off">未接続（オフラインで利用中）</span>')+
+    (gLastError?'<div style="margin-top:8px;color:#fca5a5;font-size:12px;word-break:break-all;line-height:1.5;">⚠️ エラー詳細：'+esc(gLastError)+'</div>':'');
 }
-async function maybePush(ev){if(gConnected()&&ev)gPush(ev);}
-const COLOR_BY_TYPE=Object.fromEntries(Object.entries(TYPES).map(([k,v])=>[k,v.gcal]));
-async function gPush(ev){
-  if(!gConnected())return;
-  try{
-    const body={
-      summary:`【${TYPES[ev.type].label}】${ev.title||''}`.trim(),
+function maybePush(ev){if(gConnected()&&ev)gPush(ev);}
+var COLOR_BY_TYPE={};Object.keys(TYPES).forEach(function(k){COLOR_BY_TYPE[k]=TYPES[k].gcal;});
+function gPush(ev){
+  if(!gConnected())return Promise.resolve();
+  function build(){return {
+      summary:('【'+TYPES[ev.type].label+'】'+(ev.title||'')).trim(),
       colorId:COLOR_BY_TYPE[ev.type],
       start:ev.time?{dateTime:isoStart(ev),timeZone:'Asia/Tokyo'}:{date:ev.date},
       end:ev.time?{dateTime:isoEnd(ev),timeZone:'Asia/Tokyo'}:{date:addDays(ev.date,1)},
       extendedProperties:{private:{rokusoId:ev.id,rokusoType:ev.type}}
-    };
-    let res;
-    if(ev.gid){res=await gapi.client.calendar.events.update({calendarId:DB.settings.calendarId,eventId:ev.gid,resource:body});}
-    else{res=await gapi.client.calendar.events.insert({calendarId:DB.settings.calendarId,resource:body});
-      ev.gid=res.result.id;save();}
-  }catch(e){console.warn(e);}
+    };}
+  var p=gapi.client.calendar?Promise.resolve():gInitClient();
+  return p.then(function(){
+    if(ev.gid)return gapi.client.calendar.events.update({calendarId:DB.settings.calendarId,eventId:ev.gid,resource:build()});
+    return gapi.client.calendar.events.insert({calendarId:DB.settings.calendarId,resource:build()}).then(function(res){ev.gid=res.result.id;save();});
+  }).catch(function(e){gLastError=gErrMsg(e);updateGStatus();});
 }
-async function gDelete(gid){if(!gConnected())return;try{await gapi.client.calendar.events.delete({calendarId:DB.settings.calendarId,eventId:gid});}catch(e){}}
-function isoStart(ev){const hm=(ev.time.match(/(\d{1,2}):(\d{2})/)||[]);const h=hm[1]?pad(hm[1]):'09';const m=hm[2]||'00';return `${ev.date}T${h}:${m}:00`;}
-function isoEnd(ev){const s=isoStart(ev);const d=new Date(s);d.setHours(d.getHours()+1);return `${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;}
-async function gSyncAll(){
+function gDelete(gid){if(!gConnected())return;try{gapi.client.calendar.events.delete({calendarId:DB.settings.calendarId,eventId:gid});}catch(e){}}
+function isoStart(ev){var hm=(ev.time.match(/(\d{1,2}):(\d{2})/)||[]);var h=hm[1]?pad(hm[1]):'09';var m=hm[2]||'00';return ev.date+'T'+h+':'+m+':00';}
+function isoEnd(ev){var s=isoStart(ev);var d=new Date(s);d.setHours(d.getHours()+1);return ymd(d)+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00';}
+function gSyncAll(){
   if(!gConnected()){toast('先に接続してください');return;}
-  toast('同期中…');for(const ev of DB.events){await gPush(ev);}toast('Googleへ同期しました ✅');updateGStatus();
+  if(!DB.events.length){toast('アプリに予定がありません。先に予定を追加してください');return;}
+  toast('同期中…');
+  var chain=Promise.resolve();
+  DB.events.forEach(function(ev){chain=chain.then(function(){return gPush(ev);});});
+  chain.then(function(){if(gLastError)toast('同期失敗：'+gLastError);else toast('Googleへ同期しました ✅');updateGStatus();});
 }
-async function gPull(){
+function gPull(){
   if(!gConnected()){toast('先に接続してください');return;}
-  try{
-    const T=new Date();const min=new Date(T);min.setMonth(min.getMonth()-1);const max=new Date(T);max.setMonth(max.getMonth()+3);
-    const res=await gapi.client.calendar.events.list({calendarId:DB.settings.calendarId,
+  var p=gapi.client.calendar?Promise.resolve():gInitClient();
+  p.then(function(){
+    var T=new Date();var min=new Date(T);min.setMonth(min.getMonth()-1);var max=new Date(T);max.setMonth(max.getMonth()+3);
+    return gapi.client.calendar.events.list({calendarId:DB.settings.calendarId,
       timeMin:min.toISOString(),timeMax:max.toISOString(),singleEvents:true,maxResults:250,orderBy:'startTime'});
-    let n=0;
-    for(const g of (res.result.items||[])){
-      const rid=g.extendedProperties?.private?.rokusoId;
-      if(rid&&DB.events.find(e=>e.id===rid))continue; // already ours
-      if(DB.events.find(e=>e.gid===g.id))continue;
-      const type=guessType(g);
-      const date=(g.start.date||g.start.dateTime||'').slice(0,10);if(!date)continue;
-      const time=g.start.dateTime?g.start.dateTime.slice(11,16):'';
-      DB.events.push({id:uid(),gid:g.id,type,title:(g.summary||'').replace(/^【.*?】/,'').trim(),date,time});n++;
-    }
-    save();render();toast(`${n}件を取り込みました`);
-  }catch(e){console.warn(e);toast('取り込みに失敗しました');}
+  }).then(function(res){
+    var items=(res.result.items||[]);var n=0;
+    items.forEach(function(g){
+      var rid=g.extendedProperties&&g.extendedProperties.private?g.extendedProperties.private.rokusoId:null;
+      if(rid&&DB.events.find(function(e){return e.id===rid;}))return;
+      if(DB.events.find(function(e){return e.gid===g.id;}))return;
+      var type=guessType(g);
+      var date=(g.start.date||g.start.dateTime||'').slice(0,10);if(!date)return;
+      var time=g.start.dateTime?g.start.dateTime.slice(11,16):'';
+      DB.events.push({id:uid(),gid:g.id,type:type,title:(g.summary||'').replace(/^【.*?】/,'').trim(),date:date,time:time});n++;
+    });
+    gLastError='';updateGStatus();save();render();toast(n+'件を取り込みました');
+  }).catch(function(e){if(window.console)console.warn(e);gLastError=gErrMsg(e);updateGStatus();toast('取り込み失敗：'+gLastError);});
 }
 function guessType(g){
-  const t=g.extendedProperties?.private?.rokusoType;if(t&&TYPES[t])return t;
-  const byColor=Object.entries(COLOR_BY_TYPE).find(([k,v])=>v===g.colorId);if(byColor)return byColor[0];
-  const s=(g.summary||'');
-  if(/セミナー/.test(s))return'seminar';if(/復習/.test(s))return'review';
-  if(/youtube|ユーチューブ|撮影|配信/i.test(s))return'youtube';if(/zoom|ズーム/i.test(s))return'zoom';
-  return'treatment';
+  var t=g.extendedProperties&&g.extendedProperties.private?g.extendedProperties.private.rokusoType:null;
+  if(t&&TYPES[t])return t;
+  var keys=Object.keys(COLOR_BY_TYPE);
+  for(var i=0;i<keys.length;i++){if(COLOR_BY_TYPE[keys[i]]===g.colorId)return keys[i];}
+  var s=(g.summary||'');
+  if(/セミナー/.test(s))return 'seminar';if(/復習/.test(s))return 'review';
+  if(/youtube|ユーチューブ|撮影|配信/i.test(s))return 'youtube';if(/zoom|ズーム/i.test(s))return 'zoom';
+  return 'treatment';
 }
 
-/* ============================================================
-   INIT
-   ============================================================ */
-function setTodayLabel(){const d=new Date();
-  document.getElementById('todayLabel').textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${DOW[d.getDay()]}）`;}
+function setTodayLabel(){var d=new Date();
+  document.getElementById('todayLabel').textContent=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（'+DOW[d.getDay()]+'）';}
 setTodayLabel();
 loadGoogle();
 go('dash');
 
-/* PWA: inline manifest + service worker */
 (function(){
-  const manifest={name:'六層連動操法 運営管理',short_name:'六層運営',start_url:'.',display:'standalone',
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><rect width="180" height="180" rx="36" fill="#1e293b"/><text x="90" y="124" font-size="96" fill="#38bdf8" font-family="sans-serif" text-anchor="middle">六</text></svg>';
+  var manifest={name:'六層連動操法 運営管理',short_name:'六層運営',start_url:'.',display:'standalone',
     background_color:'#0f172a',theme_color:'#1e293b',
-    icons:[{src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><rect width="180" height="180" rx="36" fill="#1e293b"/><text x="90" y="120" font-size="90" text-anchor="middle">🌀</text></svg>'),sizes:'180x180',type:'image/svg+xml'}]};
-  const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
-  const link=document.createElement('link');link.rel='manifest';link.href=URL.createObjectURL(blob);document.head.appendChild(link);
-  if('serviceWorker'in navigator){
-    const sw=`self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',e=>{});`;
-    const swUrl=URL.createObjectURL(new Blob([sw],{type:'text/javascript'}));
-    navigator.serviceWorker.register(swUrl).catch(()=>{});
+    icons:[{src:'data:image/svg+xml,'+encodeURIComponent(svg),sizes:'180x180',type:'image/svg+xml'}]};
+  var blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+  var link=document.createElement('link');link.rel='manifest';link.href=URL.createObjectURL(blob);document.head.appendChild(link);
+  if('serviceWorker' in navigator){
+    var sw="self.addEventListener('install',function(e){self.skipWaiting();});self.addEventListener('activate',function(e){self.clients.claim();});self.addEventListener('fetch',function(e){});";
+    var swUrl=URL.createObjectURL(new Blob([sw],{type:'text/javascript'}));
+    navigator.serviceWorker.register(swUrl).catch(function(){});
   }
 })();
 </script>
