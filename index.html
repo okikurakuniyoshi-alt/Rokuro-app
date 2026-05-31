@@ -178,6 +178,13 @@ function monthRange(date){var a=date.split('-').map(Number);var y=a[0],m=a[1];
   return {start:y+'-'+pad(m)+'-01', end:y+'-'+pad(m)+'-'+pad(new Date(y,m,0).getDate())};}
 var DOW=['日','月','火','水','木','金','土'];
 function jdate(s){var d=parseD(s);return (d.getMonth()+1)+'/'+d.getDate()+'('+DOW[d.getDay()]+')';}
+function zen2han(s){return String(s||'').replace(/[０-９]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-0xFEE0);});}
+function parseSeminar(title){
+  var s=zen2han(title);
+  var c=s.match(/([0-9]+)\s*期/);
+  var k=s.match(/(?:第)?\s*([0-9]+)\s*回/);
+  return {cohort:c?c[1]:'',session:k?k[1]:''};
+}
 
 var toastT;
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');
@@ -503,6 +510,7 @@ function renderMore(){
         '<button class="btn" onclick="gConnect()">接続 / 認証</button>'+
         '<button class="btn sec" onclick="gSyncAll()">全予定を同期</button></div>'+
       '<button class="btn sec" style="margin-top:8px;" onclick="gPull()">Googleから取り込む</button>'+
+      '<small class="hint" style="margin-top:8px;">「接続/認証」を押すと自動で取り込み＋セミナーのタスク生成まで行います。</small>'+
       '<div class="divider"></div>'+
       '<div class="field"><label>OAuth クライアントID</label><input id="setClientId" value="'+esc(DB.settings.clientId)+'" placeholder="xxxx.apps.googleusercontent.com"></div>'+
       '<div class="field"><label>カレンダーID</label><input id="setCalId" value="'+esc(DB.settings.calendarId||'primary')+'" placeholder="primary"></div>'+
@@ -642,7 +650,7 @@ function gConnect(){
     client_id:DB.settings.clientId,
     scope:'https://www.googleapis.com/auth/calendar',
     callback:function(resp){
-      if(resp&&resp.access_token){gToken=resp;gLastError='';updateGStatus();toast('Google連携しました ✅');}
+      if(resp&&resp.access_token){gToken=resp;gLastError='';updateGStatus();toast('連携OK。取り込み中…');gPull();}
       else{toast('認証に失敗しました');}
     }});
   tokenClient.requestAccessToken({prompt:gToken?'':'consent'});
@@ -698,7 +706,7 @@ function gPull(){
   var T=new Date();var min=new Date(T);min.setMonth(min.getMonth()-1);var max=new Date(T);max.setMonth(max.getMonth()+3);
   var q='?timeMin='+encodeURIComponent(min.toISOString())+'&timeMax='+encodeURIComponent(max.toISOString())+'&singleEvents=true&maxResults=250&orderBy=startTime';
   calApi('GET','/calendars/'+calId()+'/events'+q).then(function(res){
-    var items=(res.items||[]);var n=0;
+    var items=(res.items||[]);var n=0;var tg=0;
     items.forEach(function(g){
       var rid=g.extendedProperties&&g.extendedProperties.private?g.extendedProperties.private.rokusoId:null;
       if(rid&&DB.events.find(function(e){return e.id===rid;}))return;
@@ -706,9 +714,13 @@ function gPull(){
       var type=guessType(g);
       var date=(g.start.date||g.start.dateTime||'').slice(0,10);if(!date)return;
       var time=g.start.dateTime?g.start.dateTime.slice(11,16):'';
-      DB.events.push({id:uid(),gid:g.id,type:type,title:(g.summary||'').replace(/^【.*?】/,'').trim(),date:date,time:time});n++;
+      var ne={id:uid(),gid:g.id,type:type,title:(g.summary||'').replace(/^【.*?】/,'').trim(),date:date,time:time};
+      if(type==='seminar'){var pi=parseSeminar(g.summary||'');ne.cohort=pi.cohort;ne.session=pi.session;}
+      DB.events.push(ne);n++;
+      if(type==='seminar'){regenSeminarTasks(ne);tg++;}
     });
-    gLastError='';updateGStatus();save();render();toast(n+'件を取り込みました');
+    gLastError='';updateGStatus();save();render();
+    toast(n+'件取り込み'+(tg?'／セミナー'+tg+'件のタスク自動生成 ✅':''));
   }).catch(function(e){if(window.console)console.warn(e);gLastError=gErrMsg(e);updateGStatus();toast('取り込み失敗：'+gLastError);});
 }
 function guessType(g){
@@ -717,7 +729,7 @@ function guessType(g){
   var keys=Object.keys(COLOR_BY_TYPE);
   for(var i=0;i<keys.length;i++){if(COLOR_BY_TYPE[keys[i]]===g.colorId)return keys[i];}
   var s=(g.summary||'');
-  if(/セミナー/.test(s))return 'seminar';if(/復習/.test(s))return 'review';
+  if(/セミナー|六層/.test(s))return 'seminar';if(/復習/.test(s))return 'review';
   if(/youtube|ユーチューブ|撮影|配信/i.test(s))return 'youtube';if(/zoom|ズーム/i.test(s))return 'zoom';
   return 'treatment';
 }
