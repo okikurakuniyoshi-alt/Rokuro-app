@@ -505,10 +505,9 @@ function renderMore(){
       '<button class="btn sec" style="margin-top:8px;" onclick="gPull()">Googleから取り込む</button>'+
       '<div class="divider"></div>'+
       '<div class="field"><label>OAuth クライアントID</label><input id="setClientId" value="'+esc(DB.settings.clientId)+'" placeholder="xxxx.apps.googleusercontent.com"></div>'+
-      '<div class="field"><label>APIキー</label><input id="setApiKey" value="'+esc(DB.settings.apiKey)+'" placeholder="AIza..."></div>'+
       '<div class="field"><label>カレンダーID</label><input id="setCalId" value="'+esc(DB.settings.calendarId||'primary')+'" placeholder="primary"></div>'+
       '<button class="btn ok" onclick="saveSettings()">設定を保存</button>'+
-      '<small class="hint">連携はURL公開時のみ動作します（端末内のオフライン機能は連携なしで使えます）。</small></div>'+
+      '<small class="hint">クライアントIDのみでOK（APIキー不要）。連携はURL公開時のみ動作します。オフライン機能は連携なしで使えます。</small></div>'+
     '<div class="card"><h2>🔧 データ管理</h2>'+
       '<div class="grid2">'+
         '<button class="btn sec" onclick="exportData()">バックアップ書出</button>'+
@@ -542,7 +541,6 @@ function zmCard(e){
 function toggleCheck(id,k){var e=DB.events.find(function(x){return x.id===id;});e.checks=e.checks||{};e.checks[k]=!e.checks[k];save();renderMore();}
 function saveSettings(){
   DB.settings.clientId=val('setClientId').trim();
-  DB.settings.apiKey=val('setApiKey').trim();
   DB.settings.calendarId=val('setCalId').trim()||'primary';
   save();toast('設定を保存しました ✅');
 }
@@ -625,43 +623,43 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 function fmt(n){return (n||0).toLocaleString('ja-JP');}
 function last(a){return a[a.length-1];}
 
-/* ===== Google Calendar sync ===== */
-var gapiReady=false,gisReady=false,tokenClient=null,gToken=null,gLastError='';
+/* ===== Google Calendar sync (OAuthトークンで直接REST。APIキー不要) ===== */
+var gisReady=false,tokenClient=null,gToken=null,gLastError='';
 function gErrMsg(e){try{
-  if(e&&e.result&&e.result.error)return '['+e.result.error.code+'] '+e.result.error.message;
-  if(e&&e.body){try{var b=JSON.parse(e.body);if(b.error)return '['+(b.error.code||'')+'] '+(b.error.message||e.body);}catch(_){return String(e.body).slice(0,180);}}
-  if(e&&e.status)return 'HTTP '+e.status+(e.statusText?' '+e.statusText:'');
   if(e&&e.message)return e.message;
   return String(e).slice(0,180);
 }catch(_){return '不明なエラー';}}
 function loadGoogle(){
-  if(document.getElementById('gapijs'))return;
-  var s1=document.createElement('script');s1.id='gapijs';s1.src='https://apis.google.com/js/api.js';
-  s1.onload=function(){gapi.load('client',function(){gapiReady=true;updateGStatus();});};
-  document.head.appendChild(s1);
-  var s2=document.createElement('script');s2.src='https://accounts.google.com/gsi/client';
-  s2.onload=function(){gisReady=true;updateGStatus();};
-  document.head.appendChild(s2);
-}
-function gInitClient(){
-  return gapi.client.init({apiKey:DB.settings.apiKey,
-    discoveryDocs:['https://www.googleapis.com/discovery/v2/apis/calendar/v3/rest']});
+  if(document.getElementById('gisjs'))return;
+  var s=document.createElement('script');s.id='gisjs';s.src='https://accounts.google.com/gsi/client';
+  s.onload=function(){gisReady=true;updateGStatus();};
+  document.head.appendChild(s);
 }
 function gConnect(){
-  if(!DB.settings.clientId||!DB.settings.apiKey){toast('先にクライアントIDとAPIキーを保存してください');return;}
-  if(!gapiReady||!gisReady){toast('Google読込中…数秒後に再度お試しください');loadGoogle();return;}
+  if(!DB.settings.clientId){toast('先にクライアントIDを保存してください');return;}
+  if(!gisReady){toast('Google読込中…数秒後に再度お試しください');loadGoogle();return;}
   tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:DB.settings.clientId,
     scope:'https://www.googleapis.com/auth/calendar',
     callback:function(resp){
-      if(resp.error){toast('認証に失敗しました');return;}
-      gToken=resp;
-      gInitClient().then(function(){gLastError='';updateGStatus();toast('Google連携しました ✅');})
-        .catch(function(e){gLastError=gErrMsg(e);updateGStatus();toast('初期化失敗：'+gLastError);});
+      if(resp&&resp.access_token){gToken=resp;gLastError='';updateGStatus();toast('Google連携しました ✅');}
+      else{toast('認証に失敗しました');}
     }});
   tokenClient.requestAccessToken({prompt:gToken?'':'consent'});
 }
-function gConnected(){return !!gToken;}
+function gConnected(){return !!(gToken&&gToken.access_token);}
+function calId(){return encodeURIComponent(DB.settings.calendarId||'primary');}
+function calApi(method,path,body){
+  var opt={method:method,headers:{'Authorization':'Bearer '+gToken.access_token}};
+  if(body){opt.headers['Content-Type']='application/json';opt.body=JSON.stringify(body);}
+  return fetch('https://www.googleapis.com/calendar/v3'+path,opt).then(function(r){
+    if(r.status===204)return {};
+    return r.json().then(function(j){
+      if(!r.ok){var m=(j&&j.error&&j.error.message)?('['+(j.error.code||r.status)+'] '+j.error.message):('HTTP '+r.status);throw new Error(m);}
+      return j;
+    });
+  });
+}
 function updateGStatus(){
   var dot=document.getElementById('gdot');
   if(dot)dot.textContent=gConnected()?'🟢':'';
@@ -673,20 +671,18 @@ function maybePush(ev){if(gConnected()&&ev)gPush(ev);}
 var COLOR_BY_TYPE={};Object.keys(TYPES).forEach(function(k){COLOR_BY_TYPE[k]=TYPES[k].gcal;});
 function gPush(ev){
   if(!gConnected())return Promise.resolve();
-  function build(){return {
-      summary:('【'+TYPES[ev.type].label+'】'+(ev.title||'')).trim(),
-      colorId:COLOR_BY_TYPE[ev.type],
-      start:ev.time?{dateTime:isoStart(ev),timeZone:'Asia/Tokyo'}:{date:ev.date},
-      end:ev.time?{dateTime:isoEnd(ev),timeZone:'Asia/Tokyo'}:{date:addDays(ev.date,1)},
-      extendedProperties:{private:{rokusoId:ev.id,rokusoType:ev.type}}
-    };}
-  var p=gapi.client.calendar?Promise.resolve():gInitClient();
-  return p.then(function(){
-    if(ev.gid)return gapi.client.calendar.events.update({calendarId:DB.settings.calendarId,eventId:ev.gid,resource:build()});
-    return gapi.client.calendar.events.insert({calendarId:DB.settings.calendarId,resource:build()}).then(function(res){ev.gid=res.result.id;save();});
-  }).catch(function(e){gLastError=gErrMsg(e);updateGStatus();});
+  var body={
+    summary:('【'+TYPES[ev.type].label+'】'+(ev.title||'')).trim(),
+    colorId:COLOR_BY_TYPE[ev.type],
+    start:ev.time?{dateTime:isoStart(ev),timeZone:'Asia/Tokyo'}:{date:ev.date},
+    end:ev.time?{dateTime:isoEnd(ev),timeZone:'Asia/Tokyo'}:{date:addDays(ev.date,1)},
+    extendedProperties:{private:{rokusoId:ev.id,rokusoType:ev.type}}
+  };
+  var pr=ev.gid?calApi('PUT','/calendars/'+calId()+'/events/'+ev.gid,body)
+               :calApi('POST','/calendars/'+calId()+'/events',body).then(function(res){ev.gid=res.id;save();});
+  return pr.catch(function(e){gLastError=gErrMsg(e);updateGStatus();});
 }
-function gDelete(gid){if(!gConnected())return;try{gapi.client.calendar.events.delete({calendarId:DB.settings.calendarId,eventId:gid});}catch(e){}}
+function gDelete(gid){if(!gConnected())return;calApi('DELETE','/calendars/'+calId()+'/events/'+gid).catch(function(){});}
 function isoStart(ev){var hm=(ev.time.match(/(\d{1,2}):(\d{2})/)||[]);var h=hm[1]?pad(hm[1]):'09';var m=hm[2]||'00';return ev.date+'T'+h+':'+m+':00';}
 function isoEnd(ev){var s=isoStart(ev);var d=new Date(s);d.setHours(d.getHours()+1);return ymd(d)+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00';}
 function gSyncAll(){
@@ -699,13 +695,10 @@ function gSyncAll(){
 }
 function gPull(){
   if(!gConnected()){toast('先に接続してください');return;}
-  var p=gapi.client.calendar?Promise.resolve():gInitClient();
-  p.then(function(){
-    var T=new Date();var min=new Date(T);min.setMonth(min.getMonth()-1);var max=new Date(T);max.setMonth(max.getMonth()+3);
-    return gapi.client.calendar.events.list({calendarId:DB.settings.calendarId,
-      timeMin:min.toISOString(),timeMax:max.toISOString(),singleEvents:true,maxResults:250,orderBy:'startTime'});
-  }).then(function(res){
-    var items=(res.result.items||[]);var n=0;
+  var T=new Date();var min=new Date(T);min.setMonth(min.getMonth()-1);var max=new Date(T);max.setMonth(max.getMonth()+3);
+  var q='?timeMin='+encodeURIComponent(min.toISOString())+'&timeMax='+encodeURIComponent(max.toISOString())+'&singleEvents=true&maxResults=250&orderBy=startTime';
+  calApi('GET','/calendars/'+calId()+'/events'+q).then(function(res){
+    var items=(res.items||[]);var n=0;
     items.forEach(function(g){
       var rid=g.extendedProperties&&g.extendedProperties.private?g.extendedProperties.private.rokusoId:null;
       if(rid&&DB.events.find(function(e){return e.id===rid;}))return;
