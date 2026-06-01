@@ -219,6 +219,13 @@ function reconcileSeminarTasks(){
   });
   return changed;
 }
+function reconcileZoom(){
+  var before=DB.events.length;
+  DB.events=DB.events.filter(function(e){var s=e.title||'';return !(e.gid&&/zoom/i.test(s)&&!/ミーティング/.test(s));});
+  var changed=before-DB.events.length;
+  DB.events.forEach(function(e){if(/ミーティング/.test(e.title||'')&&e.type!=='zoom'){e.type='zoom';changed++;}});
+  return changed;
+}
 
 var toastT;
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');
@@ -293,25 +300,25 @@ function renderDash(){
       '<div class="metric '+(todayTasks.length?'amber':'green')+'"><div class="v">'+todayTasks.length+'</div><div class="l">今日やること</div></div>'+
       '<div class="metric '+(unsent.length?'red':'green')+'"><div class="v">'+unsent.length+'</div><div class="l">未送信の案内</div></div>'+
     '</div></div>'+
-  '<div class="card"><h2>📝 今日やること</h2>'+
-    (todayTasks.length?taskListHTML(todayTasks,true):'<div class="empty">今日のタスクはありません 🎉</div>')+'</div>'+
-  '<div class="card"><h2>📨 未送信一覧（送っていない案内）</h2>'+
-    (unsent.length?unsent.map(function(t){return '<div class="list-item"><div class="li-body"><div class="t">'+esc(t.label)+'</div>'+
-      '<div class="s">'+esc(t.ctx||'')+' ・ 期限 '+jdate(t.due)+(t.due<today()?' <span class="ovd">⚠️期限切れ</span>':'')+'</div>'+
-      (t.target?'<div class="s" style="color:var(--accent);font-weight:600;">送信先：'+esc(t.target)+'</div>':'')+'</div>'+
-      '<button class="btn sm ok" onclick="setTaskStatus(\''+t.id+'\',\'送信済み\')">送信済</button></div>';}).join(''):'<div class="empty">未送信の案内はありません ✅</div>')+'</div>'+
-  '<div class="card"><h2>🗓 今週やること</h2>'+
-    (weekTasks.length?taskListHTML(weekTasks,false):'<div class="empty">今週のタスクはありません</div>')+'</div>'+
   '<div class="grid2">'+
     weekEventCard('セミナー','seminar',evWeek('seminar'))+
     weekEventCard('復習会','review',evWeek('review'))+
     weekEventCard('Zoom','zoom',evWeek('zoom'))+
     weekEventCard('YouTube','youtube',evWeek('youtube'))+'</div>'+
+  '<div class="card"><h2>📝 今日やること</h2>'+
+    (todayTasks.length?taskListHTML(todayTasks,true):'<div class="empty">今日のタスクはありません 🎉</div>')+'</div>'+
+  '<div class="card"><h2>🗓 今週やること</h2>'+
+    (weekTasks.length?taskListHTML(weekTasks,false):'<div class="empty">今週のタスクはありません</div>')+'</div>'+
+  '<div class="card"><h2>📨 未送信一覧（送っていない案内）</h2>'+
+    (unsent.length?unsent.map(function(t){return '<div class="list-item"><div class="li-body"><div class="t">'+esc(t.label)+'</div>'+
+      '<div class="s">'+esc(t.ctx||'')+' ・ 期限 '+jdate(t.due)+(t.due<today()?' <span class="ovd">⚠️期限切れ</span>':'')+'</div>'+
+      (t.target?'<div class="s" style="color:var(--accent);font-weight:600;">送信先：'+esc(t.target)+'</div>':'')+'</div>'+
+      '<button class="btn sm ok" onclick="setTaskStatus(\''+t.id+'\',\'送信済み\')">送信済</button></div>';}).join(''):'<div class="empty">未送信の案内はありません ✅</div>')+'</div>'+
   '<div class="card"><h2>💰 売上サマリー（毎週月曜チェック）</h2>'+
     '<div class="grid2" style="gap:8px;">'+
-      '<div class="metric green"><div class="v">¥'+fmt(lastSales)+'</div><div class="l">先週売上</div></div>'+
-      '<div class="metric"><div class="v">¥'+fmt(monthSales)+'</div><div class="l">今月売上</div></div></div>'+
-    '<div class="metric '+(unpaid?'red':'green')+'" style="margin-top:8px;"><div class="v">'+unpaid+'件</div><div class="l">未入金件数</div></div></div>';
+      '<div class="metric green" style="cursor:pointer;" onclick="salesDetail(\'lastweek\')"><div class="v">¥'+fmt(lastSales)+'</div><div class="l">先週売上 ▸明細</div></div>'+
+      '<div class="metric" style="cursor:pointer;" onclick="salesDetail(\'month\')"><div class="v">¥'+fmt(monthSales)+'</div><div class="l">今月売上 ▸明細</div></div></div>'+
+    '<div class="metric '+(unpaid?'red':'green')+'" style="margin-top:8px;cursor:pointer;" onclick="salesDetail(\'unpaid\')"><div class="v">'+unpaid+'件</div><div class="l">未入金件数 ▸明細</div></div></div>';
 }
 function weekEventCard(name,type,list){
   return '<div class="card" style="margin-bottom:0;">'+
@@ -434,8 +441,7 @@ function renderTasks(){
     '<button class="btn sec" onclick="recalcSeminar()">取り込み済みセミナーのタスクを生成</button>'+
     '<div class="muted" style="text-align:center;font-size:12px;margin-top:8px;">セミナーを登録すると関連タスクが自動生成されます</div>';
 }
-function recalcSeminar(){var c=reconcileSeminarTasks();save();renderTasks();toast(c?c+'件のセミナーのタスクを生成しました ✅':'新たな生成はありませんでした');
-}
+function recalcSeminar(){var c=reconcileSeminarTasks();save();renderTasks();toast(c?c+'件のセミナーのタスクを生成しました ✅':'新たな生成はありませんでした');}
 function toggleTaskDone(id){
   var t=DB.tasks.find(function(x){return x.id===id;});if(!t)return;
   var done=last(t.options);
@@ -447,6 +453,30 @@ function setTaskStatus(id,s){var t=DB.tasks.find(function(x){return x.id===id;})
 
 function sumSales(a,b){return DB.patients.filter(function(p){return inRange(p.date,a,b);}).reduce(function(s,p){return s+(MARKS[p.mark]||0);},0);}
 function recalcSales(){var c=reconcileSales();save();renderSales();toast(c?c+'件の施術を売上に反映しました ✅':'新たな反映はありませんでした');}
+function salesDetail(period){
+  var T=today();var r;
+  if(period==='day')r={start:T,end:T,label:'本日'};
+  else if(period==='week'){var w=weekRange(T);r={start:w.start,end:w.end,label:'今週'};}
+  else if(period==='lastweek'){var lw=lastWeekRange();r={start:lw.start,end:lw.end,label:'先週'};}
+  else if(period==='unpaid')r={unpaid:true,label:'未入金'};
+  else {var mr=monthRange(T);r={start:mr.start,end:mr.end,label:'今月'};}
+  var list;
+  if(r.unpaid)list=DB.patients.filter(function(p){return !p.paid&&MARKS[p.mark]>0;});
+  else list=DB.patients.filter(function(p){return inRange(p.date,r.start,r.end);});
+  list=list.sort(function(a,b){return b.date.localeCompare(a.date);});
+  var total=list.reduce(function(s,p){return s+(MARKS[p.mark]||0);},0);
+  var rangeLabel=r.unpaid?'未入金のみ':(jdate(r.start)+' 〜 '+jdate(r.end));
+  openModal('<h2>'+r.label+'の明細</h2>'+
+    '<div class="muted" style="margin-bottom:8px;">'+rangeLabel+'</div>'+
+    '<div class="metric" style="margin-bottom:12px;"><div class="v">¥'+fmt(total)+'</div><div class="l">'+list.length+'件・合計</div></div>'+
+    (list.length?list.map(function(p){return '<div class="list-item"><div class="li-body">'+
+      '<div class="t">'+esc(p.mark)+' '+esc(p.name)+'</div>'+
+      '<div class="s">'+jdate(p.date)+' ・ '+(p.paid?'<span style="color:var(--ok)">入金済</span>':'<span style="color:var(--danger)">未入金</span>')+'</div></div>'+
+      '<div style="text-align:right;"><div style="font-weight:700;">¥'+fmt(MARKS[p.mark])+'</div>'+
+        '<button class="btn sm '+(p.paid?'sec':'ok')+'" style="margin-top:4px;" onclick="togglePaidM(\''+p.id+'\',\''+period+'\')">'+(p.paid?'未入金に':'入金済に')+'</button></div></div>';}).join(''):'<div class="empty">この期間の施術はありません</div>')+
+    '<button class="btn sec" style="margin-top:14px;" onclick="closeModal()">閉じる</button>');
+}
+function togglePaidM(id,period){var p=DB.patients.find(function(x){return x.id===id;});if(p){p.paid=!p.paid;save();}salesDetail(period);renderSales();}
 function renderSales(){
   var T=today();var w=weekRange(T);var lw=lastWeekRange();var mr=monthRange(T);
   var dayS=sumSales(T,T),weekS=sumSales(w.start,w.end),lastS=sumSales(lw.start,lw.end),monthS=sumSales(mr.start,mr.end);
@@ -454,14 +484,14 @@ function renderSales(){
   var recent=DB.patients.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).slice(0,40);
   var el=document.getElementById('view-sales');
   el.innerHTML=
-    '<div class="card"><h2>💰 売上集計</h2>'+
+    '<div class="card"><h2>💰 売上集計（カードを押すと明細）</h2>'+
       '<div class="grid2" style="gap:8px;">'+
-        '<div class="metric"><div class="v">¥'+fmt(dayS)+'</div><div class="l">本日</div></div>'+
-        '<div class="metric"><div class="v">¥'+fmt(weekS)+'</div><div class="l">今週</div></div>'+
-        '<div class="metric green"><div class="v">¥'+fmt(lastS)+'</div><div class="l">先週</div></div>'+
-        '<div class="metric"><div class="v">¥'+fmt(monthS)+'</div><div class="l">今月</div></div></div>'+
-      '<div class="metric '+(unpaid.length?'red':'green')+'" style="margin-top:8px;">'+
-        '<div class="v">'+unpaid.length+'件 / ¥'+fmt(unpaid.reduce(function(s,p){return s+MARKS[p.mark];},0))+'</div><div class="l">未入金</div></div>'+
+        '<div class="metric" style="cursor:pointer;" onclick="salesDetail(\'day\')"><div class="v">¥'+fmt(dayS)+'</div><div class="l">本日 ▸明細</div></div>'+
+        '<div class="metric" style="cursor:pointer;" onclick="salesDetail(\'week\')"><div class="v">¥'+fmt(weekS)+'</div><div class="l">今週 ▸明細</div></div>'+
+        '<div class="metric green" style="cursor:pointer;" onclick="salesDetail(\'lastweek\')"><div class="v">¥'+fmt(lastS)+'</div><div class="l">先週 ▸明細</div></div>'+
+        '<div class="metric" style="cursor:pointer;" onclick="salesDetail(\'month\')"><div class="v">¥'+fmt(monthS)+'</div><div class="l">今月 ▸明細</div></div></div>'+
+      '<div class="metric '+(unpaid.length?'red':'green')+'" style="margin-top:8px;cursor:pointer;" onclick="salesDetail(\'unpaid\')">'+
+        '<div class="v">'+unpaid.length+'件 / ¥'+fmt(unpaid.reduce(function(s,p){return s+MARKS[p.mark];},0))+'</div><div class="l">未入金 ▸明細</div></div>'+
       '<button class="btn sec" style="margin-top:10px;" onclick="recalcSales()">カレンダーの施術を売上に再集計</button>'+
       '<small class="hint">既に取り込み済みの施術（◯△×）も、このボタンで売上へ反映できます。</small></div>'+
     '<div class="card"><h2>＋ 施術を登録</h2>'+
@@ -787,6 +817,8 @@ function gPull(){
   calApi('GET','/calendars/'+calId()+'/events'+q).then(function(res){
     var items=(res.items||[]);var n=0;var tg=0;
     items.forEach(function(g){
+      var sm=g.summary||'';
+      if(/zoom/i.test(sm)&&!/ミーティング/.test(sm))return;
       var rid=g.extendedProperties&&g.extendedProperties.private?g.extendedProperties.private.rokusoId:null;
       if(rid&&DB.events.find(function(e){return e.id===rid;}))return;
       if(DB.events.find(function(e){return e.gid===g.id;}))return;
@@ -798,7 +830,7 @@ function gPull(){
       DB.events.push(ne);n++;
       if(ne.type==='seminar'){regenSeminarTasks(ne);tg++;}
     });
-    var sg=reconcileSales();reconcileSeminarTasks();
+    var sg=reconcileSales();reconcileSeminarTasks();reconcileZoom();
     gLastError='';updateGStatus();save();render();
     toast(n+'件取り込み'+(tg?'／セミナー'+tg:'')+(sg?'／施術'+sg+'件を売上反映':'')+' ✅');
   }).catch(function(e){if(window.console)console.warn(e);gLastError=gErrMsg(e);updateGStatus();toast('取り込み失敗：'+gLastError);});
@@ -811,14 +843,14 @@ function guessType(g){
   var keys=Object.keys(COLOR_BY_TYPE);
   for(var i=0;i<keys.length;i++){if(COLOR_BY_TYPE[keys[i]]===g.colorId)return keys[i];}
   if(/セミナー|六層/.test(s))return 'seminar';if(/復習/.test(s))return 'review';
-  if(/youtube|ユーチューブ|撮影|配信/i.test(s))return 'youtube';if(/zoom|ズーム/i.test(s))return 'zoom';
+  if(/youtube|ユーチューブ|撮影|配信/i.test(s))return 'youtube';if(/ミーティング/.test(s))return 'zoom';
   return 'treatment';
 }
 
 function setTodayLabel(){var d=new Date();
   document.getElementById('todayLabel').textContent=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（'+DOW[d.getDay()]+'）';}
 setTodayLabel();
-if(reconcileSales()+reconcileSeminarTasks()>0)save();
+if(reconcileSales()+reconcileSeminarTasks()+reconcileZoom()>0)save();
 loadGoogle();
 go('dash');
 
