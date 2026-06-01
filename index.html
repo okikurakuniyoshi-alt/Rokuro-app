@@ -195,6 +195,30 @@ function detectMark(title){
   return null;
 }
 function stripMark(title){return (title||'').replace(/^[◯○〇△▲×✕xXoO][\s：:]*/,'').trim();}
+function reconcileSales(){
+  var changed=0;
+  DB.events.forEach(function(e){
+    if(e.linkPatient)return;
+    var mk=detectMark(e.title);
+    if(!mk)return;
+    e.type='treatment';
+    var pid=uid();e.linkPatient=pid;
+    DB.patients.push({id:pid,name:stripMark(e.title)||e.title,mark:mk,date:e.date,paid:false});
+    changed++;
+  });
+  return changed;
+}
+function reconcileSeminarTasks(){
+  var changed=0;
+  DB.events.forEach(function(e){
+    if(e.type!=='seminar')return;
+    if(DB.tasks.some(function(t){return t.eventId===e.id;}))return;
+    if(!e.cohort||!e.session){var pi=parseSeminar(e.title||'');if(!e.cohort)e.cohort=pi.cohort;if(!e.session)e.session=pi.session;}
+    regenSeminarTasks(e);
+    changed++;
+  });
+  return changed;
+}
 
 var toastT;
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');
@@ -407,7 +431,10 @@ function renderTasks(){
       '<button class="'+(taskFilter==='done'?'on':'')+'" onclick="taskFilter=\'done\';renderTasks()">完了済</button></div>'+
     '<div class="card"><h2>✅ タスク（'+list.length+'件）</h2>'+
       (list.length?taskListHTML(list,true):'<div class="empty">該当タスクはありません</div>')+'</div>'+
-    '<div class="muted" style="text-align:center;font-size:12px;">セミナーを登録すると関連タスクが自動生成されます</div>';
+    '<button class="btn sec" onclick="recalcSeminar()">取り込み済みセミナーのタスクを生成</button>'+
+    '<div class="muted" style="text-align:center;font-size:12px;margin-top:8px;">セミナーを登録すると関連タスクが自動生成されます</div>';
+}
+function recalcSeminar(){var c=reconcileSeminarTasks();save();renderTasks();toast(c?c+'件のセミナーのタスクを生成しました ✅':'新たな生成はありませんでした');
 }
 function toggleTaskDone(id){
   var t=DB.tasks.find(function(x){return x.id===id;});if(!t)return;
@@ -419,6 +446,7 @@ function setTaskStatus(id,s){var t=DB.tasks.find(function(x){return x.id===id;})
   if(s==='送信済み'||s==='完了')toast('更新しました ✅');}
 
 function sumSales(a,b){return DB.patients.filter(function(p){return inRange(p.date,a,b);}).reduce(function(s,p){return s+(MARKS[p.mark]||0);},0);}
+function recalcSales(){var c=reconcileSales();save();renderSales();toast(c?c+'件の施術を売上に反映しました ✅':'新たな反映はありませんでした');}
 function renderSales(){
   var T=today();var w=weekRange(T);var lw=lastWeekRange();var mr=monthRange(T);
   var dayS=sumSales(T,T),weekS=sumSales(w.start,w.end),lastS=sumSales(lw.start,lw.end),monthS=sumSales(mr.start,mr.end);
@@ -433,7 +461,9 @@ function renderSales(){
         '<div class="metric green"><div class="v">¥'+fmt(lastS)+'</div><div class="l">先週</div></div>'+
         '<div class="metric"><div class="v">¥'+fmt(monthS)+'</div><div class="l">今月</div></div></div>'+
       '<div class="metric '+(unpaid.length?'red':'green')+'" style="margin-top:8px;">'+
-        '<div class="v">'+unpaid.length+'件 / ¥'+fmt(unpaid.reduce(function(s,p){return s+MARKS[p.mark];},0))+'</div><div class="l">未入金</div></div></div>'+
+        '<div class="v">'+unpaid.length+'件 / ¥'+fmt(unpaid.reduce(function(s,p){return s+MARKS[p.mark];},0))+'</div><div class="l">未入金</div></div>'+
+      '<button class="btn sec" style="margin-top:10px;" onclick="recalcSales()">カレンダーの施術を売上に再集計</button>'+
+      '<small class="hint">既に取り込み済みの施術（◯△×）も、このボタンで売上へ反映できます。</small></div>'+
     '<div class="card"><h2>＋ 施術を登録</h2>'+
       '<div class="field"><label>患者名</label><input id="pName" placeholder="例：田中様"></div>'+
       '<div class="field"><label>記号（金額）</label>'+
@@ -559,7 +589,7 @@ function renderMore(){
       '<div id="gStatus" style="margin-bottom:10px;"></div>'+
       '<button class="btn" onclick="gConnect()">接続 / 認証（取り込み）</button>'+
       '<button class="btn sec" style="margin-top:8px;" onclick="gPull()">Googleから取り込む</button>'+
-      '<small class="hint" style="margin-top:8px;">「接続/認証」で自動取り込み＋セミナーのタスク生成。大阪はタイトルに「大阪」、東京はそのままでOK。</small>'+
+      '<small class="hint" style="margin-top:8px;">「接続/認証」で自動取り込み＋セミナーのタスク生成＋施術売上反映。大阪はタイトルに「大阪」、東京はそのままでOK。施術は先頭に◯△×。</small>'+
       '<div class="divider"></div>'+
       '<div class="field"><label>OAuth クライアントID</label><input id="setClientId" value="'+esc(DB.settings.clientId)+'" placeholder="xxxx.apps.googleusercontent.com"></div>'+
       '<div class="field"><label>カレンダーID</label><input id="setCalId" value="'+esc(DB.settings.calendarId||'primary')+'" placeholder="primary"></div>'+
@@ -625,7 +655,7 @@ function eventForm(e,isEdit){
     '<div class="field"><label>種類</label>'+
       '<select id="ev_type" onchange="onTypeChange()">'+
         Object.keys(TYPES).map(function(k){return '<option value="'+k+'" '+(k===e.type?'selected':'')+'>'+TYPES[k].label+'</option>';}).join('')+'</select></div>'+
-    '<div class="field"><label>タイトル（大阪はここに「大阪」を入れる）</label><input id="ev_title" value="'+esc(e.title||'')+'" placeholder="例：8期 第1回 セミナー / 大阪 5期…"></div>'+
+    '<div class="field"><label>タイトル（大阪は「大阪」を、施術は先頭に◯△×）</label><input id="ev_title" value="'+esc(e.title||'')+'" placeholder="例：8期 第1回 / 大阪 5期 / ◯ 田中様"></div>'+
     '<div class="grid2">'+
       '<div class="field"><label>日付</label><input type="date" id="ev_date" value="'+(e.date||today())+'"></div>'+
       '<div class="field"><label>時間</label><input id="ev_time" value="'+esc(e.time||'')+'" placeholder="13:00〜"></div></div>'+
@@ -755,7 +785,7 @@ function gPull(){
   var T=new Date();var min=new Date(T);min.setMonth(min.getMonth()-1);var max=new Date(T);max.setMonth(max.getMonth()+3);
   var q='?timeMin='+encodeURIComponent(min.toISOString())+'&timeMax='+encodeURIComponent(max.toISOString())+'&singleEvents=true&maxResults=250&orderBy=startTime';
   calApi('GET','/calendars/'+calId()+'/events'+q).then(function(res){
-    var items=(res.items||[]);var n=0;var tg=0;var sg=0;
+    var items=(res.items||[]);var n=0;var tg=0;
     items.forEach(function(g){
       var rid=g.extendedProperties&&g.extendedProperties.private?g.extendedProperties.private.rokusoId:null;
       if(rid&&DB.events.find(function(e){return e.id===rid;}))return;
@@ -765,12 +795,10 @@ function gPull(){
       var time=g.start.dateTime?g.start.dateTime.slice(11,16):'';
       var ne={id:uid(),gid:g.id,type:type,title:(g.summary||'').replace(/^【.*?】/,'').trim(),date:date,time:time};
       if(type==='seminar'){var pi=parseSeminar(g.summary||'');ne.cohort=pi.cohort;ne.session=pi.session;}
-      var mk=detectMark(ne.title);
-      if(mk){ne.type='treatment';var pid=uid();ne.linkPatient=pid;
-        DB.patients.push({id:pid,name:stripMark(ne.title)||ne.title,mark:mk,date:date,paid:false});sg++;}
       DB.events.push(ne);n++;
       if(ne.type==='seminar'){regenSeminarTasks(ne);tg++;}
     });
+    var sg=reconcileSales();reconcileSeminarTasks();
     gLastError='';updateGStatus();save();render();
     toast(n+'件取り込み'+(tg?'／セミナー'+tg:'')+(sg?'／施術'+sg+'件を売上反映':'')+' ✅');
   }).catch(function(e){if(window.console)console.warn(e);gLastError=gErrMsg(e);updateGStatus();toast('取り込み失敗：'+gLastError);});
@@ -778,9 +806,10 @@ function gPull(){
 function guessType(g){
   var t=g.extendedProperties&&g.extendedProperties.private?g.extendedProperties.private.rokusoType:null;
   if(t&&TYPES[t])return t;
+  var s=(g.summary||'');
+  if(detectMark(s))return 'treatment';
   var keys=Object.keys(COLOR_BY_TYPE);
   for(var i=0;i<keys.length;i++){if(COLOR_BY_TYPE[keys[i]]===g.colorId)return keys[i];}
-  var s=(g.summary||'');
   if(/セミナー|六層/.test(s))return 'seminar';if(/復習/.test(s))return 'review';
   if(/youtube|ユーチューブ|撮影|配信/i.test(s))return 'youtube';if(/zoom|ズーム/i.test(s))return 'zoom';
   return 'treatment';
@@ -789,6 +818,7 @@ function guessType(g){
 function setTodayLabel(){var d=new Date();
   document.getElementById('todayLabel').textContent=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（'+DOW[d.getDay()]+'）';}
 setTodayLabel();
+if(reconcileSales()+reconcileSeminarTasks()>0)save();
 loadGoogle();
 go('dash');
 
