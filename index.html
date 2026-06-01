@@ -178,6 +178,7 @@ function monthRange(date){var a=date.split('-').map(Number);var y=a[0],m=a[1];
   return {start:y+'-'+pad(m)+'-01', end:y+'-'+pad(m)+'-'+pad(new Date(y,m,0).getDate())};}
 var DOW=['日','月','火','水','木','金','土'];
 function jdate(s){var d=parseD(s);return (d.getMonth()+1)+'/'+d.getDate()+'('+DOW[d.getDay()]+')';}
+function jdateLong(s){var d=parseD(s);return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日('+DOW[d.getDay()]+')';}
 function zen2han(s){return String(s||'').replace(/[０-９]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-0xFEE0);});}
 function parseSeminar(title){
   var s=zen2han(title);
@@ -435,33 +436,37 @@ function delPatient(id){
   save();renderSales();toast('削除しました');
 }
 
-var LINE_T = {
-  preview:{name:'予習動画案内',f:function(c){return '【'+c.cohort+'期 予習動画のご案内】\n\n'+c.cohort+'期生の皆さま、お世話になっております。\n六層連動操法セミナー事務局です。\n\n次回セミナー（'+c.dateJ+'）に向けて、予習動画を配信いたしました。\n当日までに必ずご視聴のうえ、ご参加ください。\n\n▼予習動画\n'+(c.url||'（URLを貼り付け）')+'\n\nご不明点はこのトークへお気軽にご連絡ください。\nどうぞよろしくお願いいたします。';}},
-  seminar:{name:'セミナー生案内',f:function(c){return '【'+c.cohort+'期 セミナーのご案内】\n\n'+c.cohort+'期生の皆さま、お世話になっております。\nいよいよ次回セミナーが近づいてまいりました。\n\n▼日時：'+c.dateJ+' '+(c.time||'')+'\n▼会場：'+(c.place||'（会場を記入）')+'\n▼持ち物：筆記用具・動きやすい服装\n\n当日お会いできるのを楽しみにしております。\nよろしくお願いいたします。';}},
-  supporter:{name:'サポーター案内',f:function(c){return '【サポーターの皆さまへ】\n\nいつも運営にご協力いただきありがとうございます。\n次回 '+c.cohort+'期セミナーのサポートをお願いいたします。\n\n▼日時：'+c.dateJ+' '+(c.time||'')+'\n▼集合：'+(c.place||'（会場）')+' ／ 開始30分前\n▼担当：当日ご案内します\n\nご都合のほどお知らせください。\nよろしくお願いいたします。';}},
-  review:{name:'復習会案内',f:function(c){return '【復習会のご案内】\n\nお世話になっております。\n復習会を下記の通り開催いたします。\n\n▼日時：'+c.dateJ+' '+(c.time||'')+'\n▼形式：'+(c.place||'Zoom／対面')+'\n\n復習したい内容があれば事前にお知らせください。\n皆さまのご参加をお待ちしております。';}},
-  next_schedule:{name:'次期スケジュール案内',f:function(c){return '【次期セミナー スケジュールのご案内】\n\nお世話になっております。\n次期セミナーの日程が決定いたしましたのでご案内します。\n\n▼スケジュール\n'+(c.url||'（日程を記入）')+'\n\nご検討のほどよろしくお願いいたします。';}},
-  next_apply:{name:'次期申込案内',f:function(c){return '【次期セミナー お申込みのご案内】\n\n'+c.cohort+'期セミナー、お疲れさまでした！\n継続して学びを深めたい方へ、次期セミナーのお申込みを承ります。\n\n▼お申込み\n'+(c.url||'（申込フォーム／案内）')+'\n▼締切：'+(c.deadline||'（締切日）')+'\n\n引き続きどうぞよろしくお願いいたします。';}},
-  youtube:{name:'YouTube案内',f:function(c){return '【YouTube 新着動画のご案内】\n\n新しい動画を公開しました！\n\n▼テーマ：'+(c.title||'（テーマ）')+'\n▼視聴：'+(c.url||'（動画URL）')+'\n\nぜひご覧ください。チャンネル登録・高評価もお願いします🙏';}},
-  zoom:{name:'Zoom案内',f:function(c){return '【Zoomミーティングのご案内】\n\n下記の通りZoomを開催いたします。\n\n▼日時：'+c.dateJ+' '+(c.time||'')+'\n▼テーマ：'+(c.title||'（テーマ）')+'\n▼URL：'+(c.url||'（ZoomリンクをここにIDと共に）')+'\n\nお時間になりましたらご参加ください。\nよろしくお願いいたします。';}}
+/* ===== LINE文面（テンプレートは編集・保存可能） ===== */
+var TPL_DEF = {
+  preview:{name:'予習動画案内',text:'【{期}期 予習動画のご案内】\n\n{期}期生の皆さま、お世話になっております。\n六層連動操法セミナー事務局です。\n\n次回セミナー（{日付}）に向けて、予習動画を配信いたしました。\n当日までに必ずご視聴のうえ、ご参加ください。\n\n▼予習動画\n{URL}\n\nご不明点はこのトークへお気軽にご連絡ください。\nどうぞよろしくお願いいたします。'},
+  seminar:{name:'セミナー生案内',text:'【{期}期 セミナーのご案内】\n\n{期}期生の皆さま、お世話になっております。\nいよいよ次回セミナーが近づいてまいりました。\n\n▼日時：{日付}\n▼会場：（会場を記入）\n▼持ち物：筆記用具・動きやすい服装\n\n当日お会いできるのを楽しみにしております。\nよろしくお願いいたします。'},
+  supporter:{name:'サポーター案内',text:'【サポーターの皆さまへ】\n\nいつも運営にご協力いただきありがとうございます。\n次回 {期}期セミナーのサポートをお願いいたします。\n\n▼日時：{日付}\n▼集合：（会場）／ 開始30分前\n▼担当：当日ご案内します\n\nご都合のほどお知らせください。\nよろしくお願いいたします。'},
+  review:{name:'復習会案内',text:'【復習会のご案内】\n\nお世話になっております。\n復習会を下記の通り開催いたします。\n\n▼日時：{日付}\n▼形式：Zoom／対面\n\n復習したい内容があれば事前にお知らせください。\n皆さまのご参加をお待ちしております。'},
+  next_schedule:{name:'次期スケジュール案内',text:'【次期セミナー スケジュールのご案内】\n\nお世話になっております。\n次期セミナーの日程が決定いたしましたのでご案内します。\n\n▼スケジュール\n{URL}\n\nご検討のほどよろしくお願いいたします。'},
+  next_apply:{name:'次期申込案内',text:'【次期セミナー お申込みのご案内】\n\n{期}期セミナー、お疲れさまでした！\n継続して学びを深めたい方へ、次期セミナーのお申込みを承ります。\n\n▼お申込み\n{URL}\n▼締切：{締切}\n\n引き続きどうぞよろしくお願いいたします。'},
+  youtube_monitor:{name:'YouTube候補患者',text:'{宛名}様\n六層連動操法事務局です。\n\n【最初にご確認下さい】※他の候補者の方にも同内容をご案内しております。\n\nモニター決定は【先着順】となり、決定の方のみ近日中にご返信をいたしますのでお待ちください。\n尚、こちらのメールから1週間経っても当事務局へご返信がない場合は、ご辞退と受け止めさせて頂きますので、予めご了承願います。\nこの度はYouTubeチャンネルのモニター企画にご応募いただき、誠にありがとうございます。\n今回は空きが１枠出ましたので、緊急での募集となります。\nご希望頂ける場合は、その旨の記載の上ご返信頂けますと幸いです。\n\n【撮影日】{撮影日}\n❶10:30～12:00\n❷12:00～13:30\n❸14:30～16:00\n❹16:00～17:30\n★今一度、注意事項をご確認ください。【注意事項】①施術は無料にて行わせていただきます。②動画内での顔出しはお連れ様も含めまして必須になります。③当日は東京 表参道にある治療院までお越しいただきます。　（モニター決定の方へ住所等の詳細をお知らせいたします）④事務局専用非公開の公式LINEのご登録が必須となります。ご確認のほど、よろしくお願いいたします。\n============================\n沖倉国悦【六層連動操法】\n担当：立松\nMAIL：rokusou.shisho@gmail.com\n============================'}
 };
+function getTpl(k){return (DB.settings.tpl&&DB.settings.tpl[k]!=null)?DB.settings.tpl[k]:TPL_DEF[k].text;}
+function isCustom(k){return !!(DB.settings.tpl&&DB.settings.tpl[k]!=null);}
+function fillTpl(s,c){
+  var map={'{宛名}':c.name||'（お名前）','{撮影日}':c.dateLong||'2026年〇月〇日(〇)','{日付}':c.dateJ||'（日付）','{期}':c.cohort||'〇','{URL}':c.url||'（URLを記入）','{締切}':c.deadline||'（締切日）'};
+  return s.replace(/\{宛名\}|\{撮影日\}|\{日付\}|\{期\}|\{URL\}|\{締切\}/g,function(m){return map[m];});
+}
 var lineSel='preview';
 var lcache={};
+var tplEditing=false;
 function renderLine(){
   var el=document.getElementById('view-line');
   el.innerHTML=
     '<div class="card"><h2>💬 LINE文面 自動生成</h2>'+
       '<div class="field"><label>文面の種類</label>'+
-        '<select id="lineType" onchange="lineSel=this.value;renderLine()">'+
-          Object.keys(LINE_T).map(function(k){return '<option value="'+k+'" '+(k===lineSel?'selected':'')+'>'+LINE_T[k].name+'</option>';}).join('')+'</select></div>'+
+        '<select id="lineType" onchange="lineSel=this.value;tplEditing=false;renderLine()">'+
+          Object.keys(TPL_DEF).map(function(k){return '<option value="'+k+'" '+(k===lineSel?'selected':'')+'>'+TPL_DEF[k].name+(isCustom(k)?'（編集済）':'')+'</option>';}).join('')+'</select></div>'+
+      '<div class="field"><label>宛名（お名前）</label><input id="lc_name" placeholder="例：今本　浩史" value="'+esc(lcache.name||'')+'"></div>'+
       '<div class="grid2">'+
         '<div class="field"><label>期</label><input id="lc_cohort" placeholder="例：8" value="'+esc(lcache.cohort||'')+'"></div>'+
-        '<div class="field"><label>日付</label><input type="date" id="lc_date" value="'+(lcache.date||today())+'"></div></div>'+
-      '<div class="grid2">'+
-        '<div class="field"><label>時間</label><input id="lc_time" placeholder="13:00〜" value="'+esc(lcache.time||'')+'"></div>'+
-        '<div class="field"><label>会場/形式</label><input id="lc_place" placeholder="任意" value="'+esc(lcache.place||'')+'"></div></div>'+
-      '<div class="field"><label>テーマ/タイトル（YouTube・Zoom等）</label><input id="lc_title" placeholder="任意" value="'+esc(lcache.title||'')+'"></div>'+
-      '<div class="field"><label>URL / 補足</label><input id="lc_url" placeholder="動画・申込・Zoom URLなど" value="'+esc(lcache.url||'')+'"></div>'+
+        '<div class="field"><label>日付（撮影日など）</label><input type="date" id="lc_date" value="'+(lcache.date||today())+'"></div></div>'+
+      '<div class="field"><label>URL / 補足</label><input id="lc_url" placeholder="動画・申込・LINE等" value="'+esc(lcache.url||'')+'"></div>'+
       '<div class="grid2">'+
         '<div class="field"><label>締切（申込）</label><input id="lc_deadline" placeholder="任意" value="'+esc(lcache.deadline||'')+'"></div>'+
         '<div class="field" style="display:flex;align-items:flex-end;"><button class="btn" onclick="genLine()">文面を生成</button></div></div></div>'+
@@ -470,15 +475,32 @@ function renderLine(){
       '<div class="grid2" style="margin-top:8px;">'+
         '<button class="btn ok" onclick="copyLine()">📋 コピー</button>'+
         '<button class="btn sec" onclick="shareLine()">他アプリで開く</button></div>'+
-      '<small class="hint">コピー後、LINEのトークに貼り付けて送信してください。</small></div>';
+      '<small class="hint">この場で直接編集してから送れます（1回限り）。毎回の定型を変えたい時は下で編集・保存。</small></div>'+
+    '<div class="card"><h2>✏️ 定型文（ここで編集・保存）</h2>'+
+      '<div class="muted" style="margin-bottom:6px;">「'+TPL_DEF[lineSel].name+'」'+(isCustom(lineSel)?'（編集済み）':'（既定）')+'</div>'+
+      '<textarea id="tplEdit" style="min-height:230px;">'+esc(getTpl(lineSel))+'</textarea>'+
+      '<small class="hint">差し込みマーク（生成時に自動で置き換え）：{宛名} {撮影日} {日付} {期} {URL} {締切}</small>'+
+      '<div class="grid2" style="margin-top:8px;">'+
+        '<button class="btn ok" onclick="saveTpl()">保存（次回から使う）</button>'+
+        (isCustom(lineSel)?'<button class="btn danger" onclick="resetTpl()">既定に戻す</button>':'<button class="btn sec" onclick="renderLine()">表示を更新</button>')+
+      '</div></div>';
 }
 function genLine(){
-  var c={cohort:val('lc_cohort'),date:val('lc_date'),time:val('lc_time'),place:val('lc_place'),
-    title:val('lc_title'),url:val('lc_url'),deadline:val('lc_deadline')};
+  var c={name:val('lc_name'),cohort:val('lc_cohort'),date:val('lc_date'),url:val('lc_url'),deadline:val('lc_deadline')};
   c.dateJ=c.date?jdate(c.date):'（日付）';
-  c.out=LINE_T[lineSel].f(c);lcache=c;
+  c.dateLong=c.date?jdateLong(c.date):'2026年〇月〇日(〇)';
+  c.out=fillTpl(getTpl(lineSel),c);lcache=c;
   document.getElementById('lineOut').value=c.out;
   toast('生成しました ✍️');
+}
+function saveTpl(){
+  DB.settings.tpl=DB.settings.tpl||{};
+  DB.settings.tpl[lineSel]=val('tplEdit');
+  save();tplEditing=false;toast('テンプレートを保存しました ✅');renderLine();
+}
+function resetTpl(){
+  if(DB.settings.tpl)delete DB.settings.tpl[lineSel];
+  save();tplEditing=false;toast('既定に戻しました');renderLine();
 }
 function copyLine(){
   var v=document.getElementById('lineOut').value;
@@ -506,22 +528,20 @@ function renderMore(){
       (zms.length?zms.map(zmCard).join(''):'<div class="empty">まだありません</div>')+'</div>'+
     '<div class="card"><h2>☁️ Googleカレンダー連携</h2>'+
       '<div id="gStatus" style="margin-bottom:10px;"></div>'+
-      '<div class="grid2">'+
-        '<button class="btn" onclick="gConnect()">接続 / 認証</button>'+
-        '<button class="btn sec" onclick="gSyncAll()">全予定を同期</button></div>'+
+      '<button class="btn" onclick="gConnect()">接続 / 認証（取り込み）</button>'+
       '<button class="btn sec" style="margin-top:8px;" onclick="gPull()">Googleから取り込む</button>'+
       '<small class="hint" style="margin-top:8px;">「接続/認証」を押すと自動で取り込み＋セミナーのタスク生成まで行います。</small>'+
       '<div class="divider"></div>'+
       '<div class="field"><label>OAuth クライアントID</label><input id="setClientId" value="'+esc(DB.settings.clientId)+'" placeholder="xxxx.apps.googleusercontent.com"></div>'+
       '<div class="field"><label>カレンダーID</label><input id="setCalId" value="'+esc(DB.settings.calendarId||'primary')+'" placeholder="primary"></div>'+
       '<button class="btn ok" onclick="saveSettings()">設定を保存</button>'+
-      '<small class="hint">クライアントIDのみでOK（APIキー不要）。連携はURL公開時のみ動作します。オフライン機能は連携なしで使えます。</small></div>'+
+      '<small class="hint">クライアントIDのみでOK（APIキー不要）。連携はURL公開時のみ動作します。</small></div>'+
     '<div class="card"><h2>🔧 データ管理</h2>'+
       '<div class="grid2">'+
         '<button class="btn sec" onclick="exportData()">バックアップ書出</button>'+
         '<button class="btn sec" onclick="document.getElementById(\'imp\').click()">復元読込</button></div>'+
       '<input type="file" id="imp" accept="application/json" style="display:none" onchange="importData(this)">'+
-      '<small class="hint">データはこの端末に保存されます。機種変更前にバックアップ書出を推奨。</small></div>';
+      '<small class="hint">データ（編集した文面含む）はこの端末に保存されます。機種変更前にバックアップ書出を推奨。</small></div>';
   updateGStatus();
 }
 function ytCard(e){
@@ -695,7 +715,7 @@ function isoStart(ev){var hm=(ev.time.match(/(\d{1,2}):(\d{2})/)||[]);var h=hm[1
 function isoEnd(ev){var s=isoStart(ev);var d=new Date(s);d.setHours(d.getHours()+1);return ymd(d)+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00';}
 function gSyncAll(){
   if(!gConnected()){toast('先に接続してください');return;}
-  if(!DB.events.length){toast('アプリに予定がありません。先に予定を追加してください');return;}
+  if(!DB.events.length){toast('アプリに予定がありません');return;}
   toast('同期中…');
   var chain=Promise.resolve();
   DB.events.forEach(function(ev){chain=chain.then(function(){return gPush(ev);});});
