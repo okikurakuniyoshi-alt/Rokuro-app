@@ -109,6 +109,7 @@ nav button .ic{font-size:20px;line-height:1;}
 small.hint{display:block;color:var(--sub);font-size:11px;margin-top:3px;line-height:1.4;}
 .gstat{font-size:12px;padding:6px 10px;border-radius:8px;font-weight:700;display:inline-block;}
 .gstat.off{background:#3a1d1d;color:#fca5a5;}.gstat.on{background:#0f3320;color:#86efac;}
+.ovd{color:var(--danger);font-weight:700;}
 a{color:var(--accent);}
 </style>
 </head>
@@ -186,24 +187,49 @@ function parseSeminar(title){
   var k=s.match(/(?:第)?\s*([0-9]+)\s*回/);
   return {cohort:c?c[1]:'',session:k?k[1]:''};
 }
+function detectMark(title){
+  var ch=(title||'').trim().charAt(0);
+  if(ch==='◯'||ch==='○'||ch==='〇'||ch==='O'||ch==='o')return '◯';
+  if(ch==='△'||ch==='▲')return '△';
+  if(ch==='×'||ch==='✕'||ch==='x'||ch==='X')return '×';
+  return null;
+}
+function stripMark(title){return (title||'').replace(/^[◯○〇△▲×✕xXoO][\s：:]*/,'').trim();}
 
 var toastT;
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');
   clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('on');},2600);}
 
+function seminarGroup(venue,C){
+  if(!C) return venue+'（期を入力）';
+  if(venue==='大阪'){
+    if(C<=3)return '大阪 1〜3期';
+    if(C===4)return '大阪 4期';
+    if(C===5)return '大阪 5期';
+    if(C===6)return '大阪 6期';
+    if(C===7)return '大阪 7期';
+    if(C===8)return '大阪 8期';
+    return '大阪 9期';
+  }
+  if(C<=4)return '東京 1〜4期';
+  if(C<=6)return '東京 5・6期';
+  if(C<=8)return '東京 7・8期';
+  return '東京 9期';
+}
 function regenSeminarTasks(ev){
   DB.tasks = DB.tasks.filter(function(t){return t.eventId!==ev.id;});
   if(ev.type!=='seminar') return;
   var D=ev.date, C=Number(ev.cohort)||0, S=Number(ev.session)||0;
+  var venue=/大阪/.test(ev.title||'')?'大阪':'東京';
+  var sup=(C>=7&&C<=9);
   var S3=['未対応','作成済み','送信済み'];
-  function add(label,due,opts){DB.tasks.push({id:uid(),eventId:ev.id,label:label,due:due,options:opts,status:opts[0],
-    ctx:((ev.cohort?ev.cohort+'期 ':'')+(ev.session?ev.session+'回目 ':'')+(ev.title||'')).trim()});}
-  add('予習動画配信案内', addDays(D,-11), S3);
-  add('セミナー生案内送信', addDays(D,-3), S3);
-  if(C>=7) add('サポーター案内送信（7〜9期）', addDays(D,-3), S3);
-  if(S===5) add('次期セミナースケジュール案内作成', addDays(D,-3), S3);
-  if(S===6) add('次期セミナー申込案内', D, S3);
-  add('セミナー資料添付送付', addDays(D,3), ['未対応','完了']);
+  function add(label,due,opts,target){DB.tasks.push({id:uid(),eventId:ev.id,label:label,due:due,options:opts,status:opts[0],
+    ctx:((ev.cohort?ev.cohort+'期 ':'')+venue+' '+(ev.session?ev.session+'回目':'')).trim(),target:target||''});}
+  if(sup) add('予習動画配信案内', addDays(D,-11), S3, '7・8・9期生＋サポーター');
+  add('セミナー案内送信', addDays(D,-3), S3, seminarGroup(venue,C)+(sup?'＋サポーター':''));
+  if(S===5) add('次期セミナースケジュール案内作成', addDays(D,-3), S3, '');
+  if(S===6) add('次期セミナー申込案内', D, S3, '');
+  add('セミナー資料添付送付', addDays(D,3), ['未対応','完了'], '');
 }
 function isSendTask(t){return t.options.indexOf('送信済み')>=0;}
 
@@ -247,7 +273,8 @@ function renderDash(){
     (todayTasks.length?taskListHTML(todayTasks,true):'<div class="empty">今日のタスクはありません 🎉</div>')+'</div>'+
   '<div class="card"><h2>📨 未送信一覧（送っていない案内）</h2>'+
     (unsent.length?unsent.map(function(t){return '<div class="list-item"><div class="li-body"><div class="t">'+esc(t.label)+'</div>'+
-      '<div class="s">'+esc(t.ctx||'')+' ・ 期限 '+jdate(t.due)+'</div></div>'+
+      '<div class="s">'+esc(t.ctx||'')+' ・ 期限 '+jdate(t.due)+(t.due<today()?' <span class="ovd">⚠️期限切れ</span>':'')+'</div>'+
+      (t.target?'<div class="s" style="color:var(--accent);font-weight:600;">送信先：'+esc(t.target)+'</div>':'')+'</div>'+
       '<button class="btn sm ok" onclick="setTaskStatus(\''+t.id+'\',\'送信済み\')">送信済</button></div>';}).join(''):'<div class="empty">未送信の案内はありません ✅</div>')+'</div>'+
   '<div class="card"><h2>🗓 今週やること</h2>'+
     (weekTasks.length?taskListHTML(weekTasks,false):'<div class="empty">今週のタスクはありません</div>')+'</div>'+
@@ -271,10 +298,13 @@ function weekEventCard(name,type,list){
 function taskListHTML(list,showDate){
   return list.sort(function(a,b){return a.due.localeCompare(b.due);}).map(function(t){
     var done=t.status===last(t.options)||t.status==='完了';
+    var overdue=!done&&t.due<today();
+    var dstr=overdue?'<span class="ovd">⚠️期限切れ '+jdate(t.due)+'</span>':'期限 '+jdate(t.due);
     return '<div class="list-item '+(done?'done':'')+'">'+
       '<div class="chk '+(done?'on':'')+'" onclick="toggleTaskDone(\''+t.id+'\')">'+(done?'✓':'')+'</div>'+
       '<div class="li-body"><div class="t">'+esc(t.label)+'</div>'+
-        '<div class="s">'+esc(t.ctx||'')+(showDate?' ・ '+jdate(t.due):' ・ 期限 '+jdate(t.due))+'</div>'+
+        '<div class="s">'+esc(t.ctx||'')+' ・ '+dstr+'</div>'+
+        (t.target?'<div class="s" style="color:var(--accent);font-weight:600;">送信先：'+esc(t.target)+'</div>':'')+
         statusSeg(t)+'</div></div>';}).join('');
 }
 function statusSeg(t){
@@ -436,10 +466,10 @@ function delPatient(id){
   save();renderSales();toast('削除しました');
 }
 
-/* ===== LINE文面（テンプレートは編集・保存可能） ===== */
+/* ===== LINE文面（定型文は編集・保存可能） ===== */
 var TPL_DEF = {
   preview:{name:'予習動画案内',text:'【{期}期 予習動画のご案内】\n\n{期}期生の皆さま、お世話になっております。\n六層連動操法セミナー事務局です。\n\n次回セミナー（{日付}）に向けて、予習動画を配信いたしました。\n当日までに必ずご視聴のうえ、ご参加ください。\n\n▼予習動画\n{URL}\n\nご不明点はこのトークへお気軽にご連絡ください。\nどうぞよろしくお願いいたします。'},
-  seminar:{name:'セミナー生案内',text:'【{期}期 セミナーのご案内】\n\n{期}期生の皆さま、お世話になっております。\nいよいよ次回セミナーが近づいてまいりました。\n\n▼日時：{日付}\n▼会場：（会場を記入）\n▼持ち物：筆記用具・動きやすい服装\n\n当日お会いできるのを楽しみにしております。\nよろしくお願いいたします。'},
+  seminar:{name:'セミナー案内送信',text:'【{期}期 セミナーのご案内】\n\n{期}期生の皆さま、お世話になっております。\nいよいよ次回セミナーが近づいてまいりました。\n\n▼日時：{日付}\n▼会場：（会場を記入）\n▼持ち物：筆記用具・動きやすい服装\n\n当日お会いできるのを楽しみにしております。\nよろしくお願いいたします。'},
   supporter:{name:'サポーター案内',text:'【サポーターの皆さまへ】\n\nいつも運営にご協力いただきありがとうございます。\n次回 {期}期セミナーのサポートをお願いいたします。\n\n▼日時：{日付}\n▼集合：（会場）／ 開始30分前\n▼担当：当日ご案内します\n\nご都合のほどお知らせください。\nよろしくお願いいたします。'},
   review:{name:'復習会案内',text:'【復習会のご案内】\n\nお世話になっております。\n復習会を下記の通り開催いたします。\n\n▼日時：{日付}\n▼形式：Zoom／対面\n\n復習したい内容があれば事前にお知らせください。\n皆さまのご参加をお待ちしております。'},
   next_schedule:{name:'次期スケジュール案内',text:'【次期セミナー スケジュールのご案内】\n\nお世話になっております。\n次期セミナーの日程が決定いたしましたのでご案内します。\n\n▼スケジュール\n{URL}\n\nご検討のほどよろしくお願いいたします。'},
@@ -454,13 +484,12 @@ function fillTpl(s,c){
 }
 var lineSel='preview';
 var lcache={};
-var tplEditing=false;
 function renderLine(){
   var el=document.getElementById('view-line');
   el.innerHTML=
     '<div class="card"><h2>💬 LINE文面 自動生成</h2>'+
       '<div class="field"><label>文面の種類</label>'+
-        '<select id="lineType" onchange="lineSel=this.value;tplEditing=false;renderLine()">'+
+        '<select id="lineType" onchange="lineSel=this.value;renderLine()">'+
           Object.keys(TPL_DEF).map(function(k){return '<option value="'+k+'" '+(k===lineSel?'selected':'')+'>'+TPL_DEF[k].name+(isCustom(k)?'（編集済）':'')+'</option>';}).join('')+'</select></div>'+
       '<div class="field"><label>宛名（お名前）</label><input id="lc_name" placeholder="例：今本　浩史" value="'+esc(lcache.name||'')+'"></div>'+
       '<div class="grid2">'+
@@ -496,11 +525,11 @@ function genLine(){
 function saveTpl(){
   DB.settings.tpl=DB.settings.tpl||{};
   DB.settings.tpl[lineSel]=val('tplEdit');
-  save();tplEditing=false;toast('テンプレートを保存しました ✅');renderLine();
+  save();toast('定型文を保存しました ✅');renderLine();
 }
 function resetTpl(){
   if(DB.settings.tpl)delete DB.settings.tpl[lineSel];
-  save();tplEditing=false;toast('既定に戻しました');renderLine();
+  save();toast('既定に戻しました');renderLine();
 }
 function copyLine(){
   var v=document.getElementById('lineOut').value;
@@ -530,7 +559,7 @@ function renderMore(){
       '<div id="gStatus" style="margin-bottom:10px;"></div>'+
       '<button class="btn" onclick="gConnect()">接続 / 認証（取り込み）</button>'+
       '<button class="btn sec" style="margin-top:8px;" onclick="gPull()">Googleから取り込む</button>'+
-      '<small class="hint" style="margin-top:8px;">「接続/認証」を押すと自動で取り込み＋セミナーのタスク生成まで行います。</small>'+
+      '<small class="hint" style="margin-top:8px;">「接続/認証」で自動取り込み＋セミナーのタスク生成。大阪はタイトルに「大阪」、東京はそのままでOK。</small>'+
       '<div class="divider"></div>'+
       '<div class="field"><label>OAuth クライアントID</label><input id="setClientId" value="'+esc(DB.settings.clientId)+'" placeholder="xxxx.apps.googleusercontent.com"></div>'+
       '<div class="field"><label>カレンダーID</label><input id="setCalId" value="'+esc(DB.settings.calendarId||'primary')+'" placeholder="primary"></div>'+
@@ -596,7 +625,7 @@ function eventForm(e,isEdit){
     '<div class="field"><label>種類</label>'+
       '<select id="ev_type" onchange="onTypeChange()">'+
         Object.keys(TYPES).map(function(k){return '<option value="'+k+'" '+(k===e.type?'selected':'')+'>'+TYPES[k].label+'</option>';}).join('')+'</select></div>'+
-    '<div class="field"><label>タイトル</label><input id="ev_title" value="'+esc(e.title||'')+'" placeholder="任意"></div>'+
+    '<div class="field"><label>タイトル（大阪はここに「大阪」を入れる）</label><input id="ev_title" value="'+esc(e.title||'')+'" placeholder="例：8期 第1回 セミナー / 大阪 5期…"></div>'+
     '<div class="grid2">'+
       '<div class="field"><label>日付</label><input type="date" id="ev_date" value="'+(e.date||today())+'"></div>'+
       '<div class="field"><label>時間</label><input id="ev_time" value="'+esc(e.time||'')+'" placeholder="13:00〜"></div></div>'+
@@ -604,7 +633,7 @@ function eventForm(e,isEdit){
       '<div class="grid2">'+
         '<div class="field"><label>期（数字）</label><input id="ev_cohort" inputmode="numeric" value="'+esc(e.cohort||'')+'" placeholder="例：8"></div>'+
         '<div class="field"><label>回数（1〜6）</label><input id="ev_session" inputmode="numeric" value="'+esc(e.session||'')+'" placeholder="例：1"></div></div>'+
-      '<small class="hint">登録すると 11日前/3日前/サポーター(7〜9期)/5回目/6回目/資料送付 のタスクを自動生成します。</small></div>'+
+      '<small class="hint">登録すると 予習動画(7〜9期/11日前)・セミナー案内送信(3日前/送信先自動)・5回目・6回目・資料 のタスクを自動生成。</small></div>'+
     '<div id="ev_yt" style="display:none;">'+
       '<div class="grid2">'+
         '<div class="field"><label>編集依頼日</label><input type="date" id="ev_editDate" value="'+(e.editDate||'')+'"></div>'+
@@ -726,7 +755,7 @@ function gPull(){
   var T=new Date();var min=new Date(T);min.setMonth(min.getMonth()-1);var max=new Date(T);max.setMonth(max.getMonth()+3);
   var q='?timeMin='+encodeURIComponent(min.toISOString())+'&timeMax='+encodeURIComponent(max.toISOString())+'&singleEvents=true&maxResults=250&orderBy=startTime';
   calApi('GET','/calendars/'+calId()+'/events'+q).then(function(res){
-    var items=(res.items||[]);var n=0;var tg=0;
+    var items=(res.items||[]);var n=0;var tg=0;var sg=0;
     items.forEach(function(g){
       var rid=g.extendedProperties&&g.extendedProperties.private?g.extendedProperties.private.rokusoId:null;
       if(rid&&DB.events.find(function(e){return e.id===rid;}))return;
@@ -736,11 +765,14 @@ function gPull(){
       var time=g.start.dateTime?g.start.dateTime.slice(11,16):'';
       var ne={id:uid(),gid:g.id,type:type,title:(g.summary||'').replace(/^【.*?】/,'').trim(),date:date,time:time};
       if(type==='seminar'){var pi=parseSeminar(g.summary||'');ne.cohort=pi.cohort;ne.session=pi.session;}
+      var mk=detectMark(ne.title);
+      if(mk){ne.type='treatment';var pid=uid();ne.linkPatient=pid;
+        DB.patients.push({id:pid,name:stripMark(ne.title)||ne.title,mark:mk,date:date,paid:false});sg++;}
       DB.events.push(ne);n++;
-      if(type==='seminar'){regenSeminarTasks(ne);tg++;}
+      if(ne.type==='seminar'){regenSeminarTasks(ne);tg++;}
     });
     gLastError='';updateGStatus();save();render();
-    toast(n+'件取り込み'+(tg?'／セミナー'+tg+'件のタスク自動生成 ✅':''));
+    toast(n+'件取り込み'+(tg?'／セミナー'+tg:'')+(sg?'／施術'+sg+'件を売上反映':'')+' ✅');
   }).catch(function(e){if(window.console)console.warn(e);gLastError=gErrMsg(e);updateGStatus();toast('取り込み失敗：'+gLastError);});
 }
 function guessType(g){
