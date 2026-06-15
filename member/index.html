@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>六層連動操法 会員ページ</title>
+
+<!-- PWA / iPhone home-screen -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="六層会員">
+<meta name="theme-color" content="#1B2733">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22%E5%85%AD%E5%B1%A4%E9%80%A3%E5%8B%95%E6%93%8D%E6%B3%95%20%E4%BC%9A%E5%93%A1%E3%83%9A%E3%83%BC%E3%82%B8%22%2C%20%22short_name%22%3A%20%22%E5%85%AD%E5%B1%A4%E4%BC%9A%E5%93%A1%22%2C%20%22start_url%22%3A%20%22./%22%2C%20%22scope%22%3A%20%22./%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22orientation%22%3A%20%22portrait%22%2C%20%22background_color%22%3A%20%22%23E7E4DB%22%2C%20%22theme_color%22%3A%20%22%231B2733%22%2C%20%22lang%22%3A%20%22ja%22%2C%20%22icons%22%3A%20%5B%7B%22src%22%3A%20%22data%3Aimage/png%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAAMwUlEQVR4nO3dS2wdVxkH8O8758zMfcaOHSfxI7abxHk5CSV90LSgFhUqxEOoVEKqhEDdVOxAbMuKBRIbYMEKCVBBLEAqFBaFilaRQKWllNCkwk3UNE6aNI7txK/r%2B5jHOR%2BL60osufdY8/na309JtnM9%2BfvcmXP%2BcwYP3fcECNEtxf0BRG%2BTAAkvEiDhRQIkvEiAhBcJkPAiARJeDABxfwbRw2QEEl4kQMKLBEh4MXIJJHzICCS8SICEFwmQ8GJILoKEBxmBhBcJkPAiARJeJEDCiwRIeJEACS%2BylCG8SB9IeJGvMOFFAiS8SICEFwmQ8CIBEl4kQMKLBEh4kT6Q8CIjkPAiSxnCi4xAwosESHiRAAkvEiDhRQIkvEgfSHiREUh4kQAJL4b7AwBu/BXdIO4LEP4AZQ6I/TT0KAStUCFnjNiWMhDBERBBX0nt2aVDg0QyFHVmqWaX122agdFsGWIbgawDreD4eLhnl0HJTVeGd%2BtWQpduJks1G7R/A3PHEyAC0ApOTkSDVZ1k8v3VvSjEU5PRO9fi5XWrFcMvIkMfCBGyjI6ORnt26VZKHD/19mEtaAXHDoT/fK9lHeV/Lhlu44kgDHBwl04zSY8vRLAExQB3V7RzlP/FQN4BQgTrqFrUxRBdzsferggAcbCiWK6BeCYSEeV%2Ba5NxjeV5B4gIELGVUGIlQ5uIai2eexGGEUgrqLfsWsMZxXPnuc0ggnVwt2YVx9cJz0U0Il6bTzJHSoGTDHWLCIgg0HhjMa23rEaGX0ieeSCtYKVuL15rnZooRAatk5GoG1qhUnBtPr0ylxiNLOeQpw9EBIGG5Zo9/35zZMDsrmiuidSettbI5lfswmpmNHD1utjWwgjAKKi33KWbcWRQKSQCWdPoSJw6IjAaGUuBnKvxBKAQtEFHYGVBo3NGI3A3OvjrHO2fX8aeLmyFL31pJAov/COQjD0%2B2Ach5gAhQJqRTAV1BwGMRqV4G4lMEME5sERDfebAkCmGSmLUqbmlbG4pi1PHOAnCsz8QAmQWtIZHT5THhgIpdXTn8Gi43nR/f7dx624aBTupkegAjIZHT5dHB4NWIiNPlwigFKlPny6fu7B%2BezkLOCajGQKkEFopnTlaPLAnXG85LTeC3UKA1FKg8eET5ZferKV2BxTKAMA6KIVqdE8Yp8SygLydKIQ0o0pB7d9tMo5GYt5LGYiQWtrXZyoFlWUMP/D2gwAIsH/AXL2dAOW9JsYzAihka9BtV1xXAgyNRIW43nKtRIafTUMAKzWeijlDbo2G5bq9u5aFBmXuxx8iZBY%2BvJuyDEIcfSACRLo429zbr43CzBIq6Ud3gwgIoBjihavNlXoWGMx/lwGG23gCCDQurGTnLtQfO10uRpha2V6hG4FGreDitdb5K02uyWicOPUphsO2b8cy2l3Rh0ei4QHDNZHa0xZXs%2BsL6bX5pF0MYsG2FkYEgcGVunvjUqMYoVE8ld6e1ogdEISG89SxNhIJjIJAo7WQWYbnuntdaHZ8I5E2nvKRi%2BhubIUvfVlKEF74X7Yiw0/XaAsMQpzvC2vnJk6pvded6AyCAgjMjm8kjgwGh0fCckE5J3skdgAJZheSDxbSZuIivjl9ngC1Z9%2BNhi890HdoOJRSR3dOHSys1e2f3qrNzqelkCdDOH7yk/kflQi0gi%2Bf3XVwf9SIZUGse6HBzNLv/776wWIackxG8zQSmyl95uOVwyPRWsNpWQjzkKQUBvi5%2B6u/enUl5ehX8TQSywV1cDhsJrJHoi%2BlIEmpr6zHh4JkJwRoo5HYb/pK2nJ0eLchBASY2BcSMYzlfI1EuXDeVFzrqXn3gdqXz6sN24hdIAuom4QAFldT5DidPI3EO2vZ/HIWBsrJVr/eFEJm6epcojXDpDDPUoYCeH2mPjoYGANZBoiyxUI3HAEQlIvqtf/U76xlkUHK/RcSx6cfyfuYAIjQSmhiX/Dkw/2lSCUZOZI6R8eMRqPx9Zn6uQvrUcBzPcATIPjo%2BdShfnN6sjCxLyqG6DhuInrarbvppZutyzfjgK%2BRyBYg2FjQoCSjSkFvvPFKEvR/Q4Ba0xFBIeRsA3M3EjUGGjNLqWX8IL0qCqSRSO1XhcjQ042t0IHh7AOJbWBL7JEoL27uEvG/KIIzQO3cxClZJ%2BNgNxAxCnZwI9E6cJYm94bTk4VqUVkn04mduXwzvvJhXI9dIdiJjUQKND79%2BMCJ8YJSkpyOEcCDx0pLa/a3f125fKNVLvDsUooHph/O/6hEZJT6%2BhO7jx8o1JqyHtYtgijENKNfvLx05VYccUwIMayFKQX1mL7ySHV6vLi8bo3O%2BwNsHwhxQlGAX320/8e/W2y/xDjn/0%2BORqKFalEfn4jqssOmN6UgTmlgl54ajeKUp5FIef5RSEnmxobMQNVYjk0htyEEhXhkNCJygLn%2BbwIQxysvAZSSRuIm42okMuyRaBQurdl608nws1mIYG45YTmfuQcIIDBweym7sZgUQmXlDswPASiEJHMz11tG74znwgBAa3jlfO2e/VFoMMlIISDnaxt7En7USKyU1Mtvrc0vZyy9Djxw4mzexwRQCI3YTY0VnnlisFxUcUokdbJOEQRGGQ2vnK/98fXVYsjUSGQJEAAoBc2YRgaCB4%2BXpkYL5YJy7AuDveb6QnLh/ebFq83AIDK9tpktQLDx5U1JStWSbu8ZLZfVHVmtWyIqRopzMZVxHdwSGANBoFLrkozrU/SwQggA6Fh7Zcw7lBEBASFAew5eBqCObIWn6vgLZW30P/%2BKHsIfIIUfVcskP52ijVI5I9ZGIgIANBOydivUw3uPQohCZRRnsZW5kWgtTY1GZ6ZK/WVjrUwFdead2cbM9VataYsR2y4DOHb8IYajIqQZhQa/%2BcWhM4dLWslzPZ0jIILF1eynLy2%2BM9uslHgyxBAgBHBERqtvPbn33oOl1YaVi5/uEEAxxCSjH74wP/NBq8ixzybD%2B8JQYaPpnvns7jOHS3fWskDL8NO9ZkLFEJ/9/J7vPv9hnJLeGY1E6i/rew%2BVa01nZJNEP1pBM6GhvmB6ohgnDA2ZvAOkEOLUTe6LhvqCTPZI3AwIAApOThYdQf6LQTyNRKNQGombCAECw7VHYr7fmQQQKFxYSWsNGwRSAtoEBEAENxaSja068j2lDJXW0Kibd5Krt1ulUFmpcPgh2tgq%2Bu0rjWDHNBJJK3zxtZWjY8XQqDh1WqE0ErtADgiov6xf%2BNvyzTtpKVL5r8zj2LFP5HxIAFAI9Zabnix%2B56n91ZJuJc5JG6hzocHA4IuvLf/61bulAk8rCEePPchwWAClsNGy43ujxz5WnZ4sVYvaOtlnswMEcOVW/Oa7tX9croeMjUSuAEH7lj6jOHH9FbPxphlJUCeWaxkRcI09bZyr8Y4gNFgITJpRnDoJT6dKkQJkrpXx75FoiRDByAVQ59qP9fDiL5S1cZ8H0SX%2BACkElOGnKwREbsc3Ehuxy6SR2BWFWIyU0ZyXQWxPZSgFmSVraXqi%2BMjJ6mDVpLK22qG3Ltf/9V59rWHLBWWZdmrH0aMP5H9UhRCnFIX43NOjZ6erWsm3WOcIiGhuKf3Bb269eXm9v2xY1oUYAtR%2BY7wx%2BL1vjD10vLJcs9xPFvSwUqTilJ77%2BY1/X6mXIoZ9NhkCpBWu1rNvPzX8tcf3zC%2BnXD2E7cE6KkVqcSV79kezrdQplfcNLUMrJ7U0UA3OHq%2BsNjKufbW2Da2wHtPwQHBmqtyMXf4Fz9wbiQpaiZsaKwwPhGkm66ebAIFA4f1Hyo4o/3o5RyORwCiU/Vk3EWMjkaVQhreXkuW6lQxtFiK4OhfvjD0SCaJAzd6OL99olgvKWrn/8kIEWmGcuDdmaqFhKJQx7A9EQErD839ZPHVPKQpVK3EbT6ZKljqC0N7TbbBqfvbnhdn5VrmgGRqJI0fvz/mQAKAVrjWy%2B45Uvv/MeF9ZN2InWyR2IQowNOqXryz%2B5A9zlaLmaSSyBAgItMb1pj00XPjCQ/33TVX6ylq2/O3UzPXGubfXzl1YLYSKrZE4coQjQAAAoBDj1DUTN1g1UaicvPmgQ4urGRFUiju3kUhhgIXQJBm1UtkksWOVogJA3t1tt0QjUSEoeUi%2Bc84B%2B60Hf6EM2udAbsF6k8zlCS8M%2BwOJ7URGIOFFAiS8SICEFwmQ8CIBEl6YX7Yiep2MQMIL5/vCxDYgI5DwIgESXiRAwosESHiRAAkvEiDhRQIkvEgfSHiRpQzhRb7ChBcJkPAiARJeJEDCiwRIeJEACS/SBxJeZAQSXiRAwosESHiRpQzhRUYg4UUCJLxIgIQX6QMJLzICCS8SIOFFAiS8SICEFwmQ8CIBEl4kQMLLfwE1WXzkdJhdYAAAAABJRU5ErkJggg%3D%3D%22%2C%20%22sizes%22%3A%20%22192x192%22%2C%20%22type%22%3A%20%22image/png%22%2C%20%22purpose%22%3A%20%22any%22%7D%2C%20%7B%22src%22%3A%20%22data%3Aimage/png%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkOtAAALlUlEQVR4nO3dP7IdRxnG4TnUJCaAAAKwLckBWPgKOzJ/JUFIAoFd5QxvwDJr0NUabGkDJnOVHeAdWCwBVQEJkEAAAVTZhEMA5QWc/no%2BzrzPs4IuVX/9m9bce%2Bf0rdd/tgCQZ922rXsNADT4UvcCAOghAAChBAAglAAAhBIAgFACABBKAABCCQBAKAEACCUAAKEEACCUAACEEgCAUAIAEEoAAEIJAEAoAQAIJQAAoQQAIJQAAIRal8VH4QESuQEAhBIAgFACABBKAABCCQBAKAEACCUAAKEEACDU6vfAADK5AQCEEgCAUAIAEEoAAEIJAEAoAQAIJQAAoQQAIJQAAIQSAIBQAgAQat38MSCASG4AAKEEACCUAACEEgCAUAIAEEoAAEIJAEAoAQAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAglAAChVh8EA8jkBgAQSgAAQq2L/wMCiOQGABBKAABCCQBAKAEACCUAAKEEACCUAACEEgCAUAIAEEoAAEIJAEAoAQAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAglAACh1m3ZutcAQAM3AIBQAgAQSgAAQgkAQKjVO2CATG4AAKEEACCUAACEEgCAUAIAEEoAAEIJAEAoAQAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQKh18UEAgEhuAAChBAAglAAAhBIAgFACABBKAABCCQBAKAEACCUAAKEEACCUAACEEgCAUAIAEGr1x0Bnu3v1XPcS4FL99tm/u5dwZGv3Ag7LuQ/jvpgjJZhBAOo5%2BqHcf8dKBmp5B1DM6Q/zmK9aAlDJ7oTZTFkhAShjX8I%2BzFoVAahhR8KeTFyJdfNzoMPuXX25ewkQ5%2B7Vc0%2Bffd69isvmBgAQSgBGefyHLqZvkAAAhBIAgFACMMQNFHqZwRECABBKAABCCQBAKAEACCUAAKEEACCUAAzxp0iglxkcIQAAoQQAIJQAjHIDhS6mb5AAAIQSgAIeQ2B/5m6cANSwF2FPJq6EAJSxI2EfZq2KAFSyL2E2U1ZIAIrZnTCP%2Baq1LsvWvYajefrss8V3KqCUo3%2BG1fk/ydPf/W%2B/3rujBHCmL%2BaIGdbuBRyfHQz8f/IOACCUAACEEgCAUAIAEEoAAEIJAEAoAQAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAglAAChfBBmurfuf6V7CXCpPvz0X91LOLLTS6/9tHsNx%2BTch0JKMMPp1ms/6V7D0bx1/6vdS4Bj%2BvDTf3Yv4VC8Ayjm9Id5zFctAahkd8JspqyQAJSxL2EfZq2KANSwI2FPJq6EABSwF2F/5m6cAACEEoBRHkOgi%2BkbJAAAoQQAINTp1qt%2BE/h8bqDQzq8Hn80NACCUAACEEgCAUAIAEEoAAEIJAEAoARji58%2BglxkcIQAAoQQAIJQAjHIDhS6mb9C6LFv3Gg7AvyG0MHpD3AAKeAyB/Zm7cQJQw16EPZm4EgJQxo6EfZi1KgJQyb6E2UxZIQEoZnfCPOar1unWq/e713BMvhUDhRz9MwjAdEoAZ3PuTyUAAKG8AwAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAglAAChVp9UA8jkBgAQat1cAQAiuQEAhBIAgFACABBq7V7A8b3z8691LwEu1ZNP/tG9hCM73fzuve41HJNzHwopwQwCUM/RD5PIQC3vAIo5/WEe81VLACrZnTCbKSskAGXsS9iHWasiADXsSNiTiSshAAXsRdifuRsnAAChBGCUxxDoYvoGCQBAKAEACCUAQ9xAoZcZHCEAAKEEACCUAACEEgCAUAIAEGpdlq17DQAjHGJncgMY8uSTv3cvAaKZwRECABBKAABCCcAoN1DoYvoGCQBAqNPNO3e713AE7/zi691LgCxPfuPxf5QbQA17EfZk4koIQBk7EvZh1qoIQCX7EmYzZYUEoJjdCfOYr1peAs/itTAUcvTPIADTKQGczbk/lQAAhPIOACCUAACEEgCAUAIAEEoAAEIJAEAoAQAItW6%2BpwwQyQ0AIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAglAACh1u4FHN/DX36jewlwqR79%2Bm/dSziy0407P%2B5ewzE596GQEswgAPUc/TCJDNTyDqCY0x/mMV%2B1BKCS3QmzmbJCAlDGvoR9mLUqpxtX3gEUePi2HQm7evSB9wGj3AAKOP1hf%2BZunAAAhBKAUR5DoIvpGyQAAKEEACDU6cbVj7rXcMEevv3N7iVAukcf/LV7CZfKDQAglAAAhBIAgFACABBKAABCCQBAKAEY4ufPoJcZHCEAAKEEACCUAIxyA4Uupm%2BQAACEEoACHkNgf%2BZunADUsBdhTyauhACUsSNhH2atigBUsi9hNlNWSACK2Z0wj/mq5YMws/hWDBRy9M8gANMpAZzNuT%2BVAACE8g4AIJQAAIRat2XrXgMADdwAAEKtLgAAmdwAAEIJAEAoAQAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAi1di/g%2BB6/e7N7CXCpHrz/l%2B4lHNnpxVd%2B2L2GY3LuQyElmEEA6jn6YRIZqOUdQDGnP8xjvmoJQCW7E2YzZYUEoIx9Cfswa1UEoIYdCXsycSVOL77yg%2B41XLzH797qXgIkevD%2Bn7uXcNncAABCCcAoj//QxfQNEgCAUAIAEEoAhriBQi8zOEIAAEIJAEAoAQAIJQAAoQQAINS6bN1LABjhEDuXG8CQB%2B/5UyTQyQyOEACAUAIAEEoARrmBQhfTN0gAAEIJQAGPIbA/czdOAGrYi7AnE1dCAMrYkbAPs1ZFACrZlzCbKSt0euE73%2B9ew9E8/tVL3UuAY3rw3p%2B6l3AoAjCLDEAhR/8MAjCdEsDZnPtTCQBAKC%2BBAUIJAEAoAQAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAglAAChBAAglAAAhBIAgFACABBqXbbuJRzdR9ff7l4CXKo3r//YvYQjO71w%2B3vdazimj65f7l4CHMeb13/oXsIBCUA9Rz9MIgO1vAMo5vSHecxXLQGoZHfCbKaskACUsS9hH2atigDUsCNhTyauhAAUsBdhf%2BZunAAAhBKAUR5DoIvpGyQAAKEEACCUAAxxA4VeZnCEAACEEgCAUAIAEEoAAEIJAEAoAQAIJQBDfJ4CepnBEQIAEEoAAEIJwCg3UOhi%2Bgat27J1rwHgHI6vQW4ABd64/n33EiCOuRsnADXsRdiTiSshAGXsSNiHWasiAJXsS5jNlBUSgGJ2J8xjvmqdnr/9evcajunj69vdS4DjcPTPcHr%2BZQGY6%2BNHSgBneuOhc38iAQAI5R0AQCgBAAglAAChBAAglAAAhBIAgFACABBKAABCCQBAKAEACCUAAKEEACDUuviqMkAkNwCAUAIAEEoAAEIJAEAoAQAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAglAAChBAAg1OpzAACZ3AAAQgkAQCgBAAglAACh1s1bYIBIbgAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAglAAChBAAglAAAhBIAgFACABBKAABCCQBAKAEACCUAAKEEACCUAACEEgCAUAIAEGpdlq17DQA0cAMACCUAAKFW/wMEkMkNACCUAACEEgCAUAIAEEoAAEIJAEAoAQAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAglAAChBAAg1Lr5JBhAJDcAgFACABBKAABCCQBAKAEACCUAAKEEACCUAACEEgCAUAIAEEoAAEKt/hQQQCY3AIBQAgAQSgAAQgkAQCgBAAglAAChBAAglAAAhFoXvwkGEMkNACCUAACEEgCAUAIAEEoAAEIJAEAoAQAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAglAAChBAAglAAAhBIAgFACABBKAABC/QfLIqdlCy1aWwAAAABJRU5ErkJggg%3D%3D%22%2C%20%22sizes%22%3A%20%22512x512%22%2C%20%22type%22%3A%20%22image/png%22%2C%20%22purpose%22%3A%20%22any%20maskable%22%7D%5D%7D">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --sumi:#1B2733; --sumi-2:#243447;
+  --ai:#27496D; --ai-light:#5C7C9C;
+  --shu:#C8472E; --kin:#C9A75B;
+  --ground:#E7E4DB; --surface:#FBF9F4; --surface-2:#F2EFE7;
+  --ink:#20272E; --muted:#6E7479; --line:rgba(27,39,51,.10);
+  --line-strong:rgba(27,39,51,.18);
+  --line-gold:rgba(201,167,91,.45);
+  --nav-h:64px;
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --serif:"Shippori Mincho",serif;
+  --sans:"Zen Kaku Gothic New",system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:var(--sans); color:var(--ink);
+  background:var(--ground);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+.app{
+  max-width:480px; margin:0 auto; min-height:100%;
+  background:var(--ground);
+  position:relative; display:flex; flex-direction:column;
+  box-shadow:0 0 60px rgba(27,39,51,.08);
+}
+@media(min-width:520px){ .app{ min-height:100dvh } }
+
+/* ---------- header ---------- */
+.hdr{
+  position:sticky; top:0; z-index:40;
+  background:
+    radial-gradient(120% 100% at 80% -20%, rgba(92,124,156,.35), transparent 60%),
+    linear-gradient(160deg,#243447 0%,#1B2733 70%);
+  color:#F4F1EA;
+  padding:calc(var(--safe-t) + 14px) 20px 14px;
+  display:flex; align-items:center; gap:12px;
+  border-bottom:1px solid rgba(201,167,91,.22);
+}
+.mark{ width:30px; height:34px; flex:0 0 auto; display:flex; flex-direction:column; justify-content:center; gap:2.5px }
+.mark i{ display:block; height:3px; border-radius:2px; background:var(--kin); opacity:.55 }
+.mark i:nth-child(2){opacity:.66} .mark i:nth-child(3){opacity:.76}
+.mark i:nth-child(4){opacity:.84} .mark i:nth-child(5){opacity:.92} .mark i:nth-child(6){opacity:1}
+.hdr-t{ display:flex; flex-direction:column; line-height:1.1 }
+.hdr-t .jp{ font-family:var(--serif); font-weight:600; font-size:16px; letter-spacing:.06em }
+.hdr-t .sub{ font-size:10.5px; letter-spacing:.28em; color:var(--kin); margin-top:3px; opacity:.85 }
+.hdr-bell{ margin-left:auto; position:relative; width:38px; height:38px; border-radius:50%;
+  display:grid; place-items:center; background:rgba(255,255,255,.06) }
+.hdr-bell svg{ width:18px; height:18px; stroke:#E7E4DB }
+.hdr-bell .dot{ position:absolute; top:9px; right:10px; width:7px; height:7px; border-radius:50%; background:var(--shu); border:1.5px solid #1f2c3a }
+
+/* ---------- main ---------- */
+.main{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:20px 18px calc(var(--nav-h) + var(--safe-b) + 26px) }
+.screen{ display:none; animation:rise .42s cubic-bezier(.2,.7,.2,1) both }
+.screen.active{ display:block }
+@keyframes rise{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none} }
+
+.eyebrow{ font-size:11px; letter-spacing:.26em; color:var(--ai); font-weight:700; text-transform:none }
+.scr-title{ font-family:var(--serif); font-weight:600; font-size:23px; margin:2px 0 16px; letter-spacing:.04em }
+.greet{ font-family:var(--serif); font-weight:600; font-size:25px; line-height:1.35; margin:5px 0 12px }
+.greet b{ color:var(--ai) }
+
+.badges{ display:flex; gap:7px; flex-wrap:wrap; margin-bottom:22px }
+.badge{ font-size:11.5px; font-weight:500; padding:5px 11px; border-radius:999px;
+  background:var(--surface); border:1px solid var(--line-strong); color:var(--ink) }
+.badge.gold{ border-color:var(--line-gold); color:#8a6a23; background:#fbf6ea }
+
+/* hero next-session card */
+.hero{
+  position:relative; overflow:hidden; border-radius:20px; color:#F4F1EA;
+  background:linear-gradient(155deg,#284866 0%,#1B2733 78%);
+  padding:20px 20px 18px; margin-bottom:24px;
+  box-shadow:0 14px 30px -16px rgba(27,39,51,.6);
+}
+.hero .layers{ position:absolute; right:-30px; top:-10px; width:160px; height:160px; opacity:.5 }
+.hero .layers i{ position:absolute; right:0; height:7px; border-radius:4px; background:var(--kin) }
+.hero-lab{ font-size:11px; letter-spacing:.22em; color:var(--kin); font-weight:700 }
+.hero-title{ font-family:var(--serif); font-weight:600; font-size:21px; margin:8px 0 2px; position:relative }
+.hero-topic{ font-size:12.5px; color:#C9D4DF; margin-bottom:16px; position:relative }
+.hero-date{ display:flex; align-items:baseline; gap:10px; position:relative }
+.hero-date .d{ font-family:var(--serif); font-size:30px; font-weight:600; letter-spacing:.02em }
+.hero-date .cd{ font-size:12px; color:#0f1a24; background:var(--kin); padding:3px 9px; border-radius:999px; font-weight:700 }
+.hero-meta{ display:flex; gap:18px; margin-top:14px; position:relative }
+.hero-meta div{ font-size:12px; color:#C9D4DF }
+.hero-meta b{ display:block; font-size:10px; letter-spacing:.16em; color:var(--kin); font-weight:700; margin-bottom:3px }
+.hero-btn{ margin-top:16px; position:relative; display:inline-flex; align-items:center; gap:6px;
+  background:rgba(255,255,255,.1); border:1px solid rgba(201,167,91,.4); color:#F4F1EA;
+  font-family:var(--sans); font-size:12.5px; font-weight:500; padding:9px 15px; border-radius:999px }
+.hero-btn svg{ width:13px; height:13px; stroke:var(--kin) }
+
+/* quick actions */
+.quick{ display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin-bottom:26px }
+.qa{ background:var(--surface); border:1px solid var(--line); border-radius:15px;
+  padding:13px 6px 10px; text-align:center; cursor:pointer; transition:transform .12s, box-shadow .2s }
+.qa:active{ transform:scale(.95) }
+.qa .ic{ width:34px; height:34px; margin:0 auto 7px; border-radius:11px; display:grid; place-items:center;
+  background:linear-gradient(150deg,#eef3f6,#e2eaf0) }
+.qa .ic svg{ width:18px; height:18px; stroke:var(--ai); fill:none; stroke-width:1.7 }
+.qa span{ font-size:10.5px; color:var(--ink); font-weight:500; letter-spacing:.02em }
+
+.sec-head{ display:flex; align-items:center; justify-content:space-between; margin:0 0 12px }
+.sec-head h2{ font-family:var(--serif); font-weight:600; font-size:17px; letter-spacing:.04em }
+.sec-head a{ font-size:12px; color:var(--ai); font-weight:500 }
+
+/* news preview / list */
+.news-item{ background:var(--surface); border:1px solid var(--line); border-radius:14px;
+  padding:13px 15px; margin-bottom:10px; cursor:pointer; transition:transform .12s }
+.news-item:active{ transform:scale(.985) }
+.news-top{ display:flex; align-items:center; gap:9px; margin-bottom:5px }
+.cat{ font-size:10px; font-weight:700; letter-spacing:.08em; padding:3px 8px; border-radius:6px }
+.cat.un{ background:#eaf0f5; color:var(--ai) }
+.cat.kyo{ background:#fbf1e9; color:#b65a2e }
+.cat.fuku{ background:#eef3ec; color:#5a7a4e }
+.news-date{ font-size:11px; color:var(--muted) }
+.news-title{ font-size:13.5px; font-weight:500; line-height:1.5 }
+.news-body{ font-size:12px; color:var(--muted); margin-top:5px; line-height:1.6 }
+
+/* schedule */
+.chips{ display:flex; gap:8px; margin-bottom:18px }
+.chip{ font-size:12.5px; font-weight:500; padding:7px 16px; border-radius:999px; cursor:pointer;
+  background:var(--surface); border:1px solid var(--line-strong); color:var(--muted); transition:.18s }
+.chip.on{ background:var(--ai); border-color:var(--ai); color:#fff }
+.month-lab{ font-family:var(--serif); font-size:13px; color:var(--ai); font-weight:600;
+  letter-spacing:.1em; margin:18px 2px 11px; display:flex; align-items:center; gap:9px }
+.month-lab::after{ content:""; flex:1; height:1px; background:var(--line) }
+.ev{ display:flex; gap:14px; background:var(--surface); border:1px solid var(--line);
+  border-radius:15px; padding:13px 14px; margin-bottom:10px }
+.ev-date{ flex:0 0 52px; text-align:center; border-right:1px solid var(--line); padding-right:12px }
+.ev-date .m{ font-size:10px; color:var(--muted); letter-spacing:.1em }
+.ev-date .day{ font-family:var(--serif); font-size:25px; font-weight:600; line-height:1.1; color:var(--ink) }
+.ev-date .w{ font-size:10px; color:var(--shu); font-weight:700; margin-top:1px }
+.ev-body{ flex:1; min-width:0 }
+.ev-title{ font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px; flex-wrap:wrap }
+.pill{ font-size:9.5px; font-weight:700; letter-spacing:.04em; padding:2.5px 8px; border-radius:999px }
+.pill.open{ background:var(--shu); color:#fff }
+.pill.plan{ background:#e9edf1; color:var(--ai) }
+.pill.opt{ background:#f0ede4; color:var(--muted) }
+.ev-topic{ font-size:12px; color:var(--ink); margin:5px 0 7px; line-height:1.5 }
+.ev-meta{ font-size:11.5px; color:var(--muted); display:flex; gap:14px; flex-wrap:wrap }
+.ev-meta span{ display:inline-flex; align-items:center; gap:4px }
+.ev-meta svg{ width:12px; height:12px; stroke:var(--ai-light); fill:none; stroke-width:1.6 }
+
+/* materials */
+.note{ font-size:12px; color:var(--muted); background:var(--surface-2); border:1px solid var(--line);
+  border-radius:11px; padding:10px 13px; margin-bottom:18px; line-height:1.6 }
+.mat-group{ margin-bottom:18px }
+.mat-group h3{ font-size:13px; font-weight:700; color:var(--ink); margin:0 2px 9px;
+  display:flex; align-items:center; gap:8px }
+.mat-group h3 .me{ font-size:9.5px; font-weight:700; color:#8a6a23; background:#fbf6ea;
+  border:1px solid var(--line-gold); padding:2px 7px; border-radius:6px }
+.mat-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden }
+.link-row{ display:flex; align-items:center; gap:12px; padding:13px 15px; cursor:pointer; transition:.12s }
+.link-row:active{ background:var(--surface-2) }
+.link-row + .link-row{ border-top:1px solid var(--line) }
+.link-row .li{ width:32px; height:32px; flex:0 0 auto; border-radius:9px; display:grid; place-items:center;
+  background:linear-gradient(150deg,#eef3f6,#e2eaf0) }
+.link-row .li svg{ width:16px; height:16px; stroke:var(--ai); fill:none; stroke-width:1.7 }
+.link-row .lt{ flex:1; min-width:0 }
+.link-row .lt b{ font-size:13px; font-weight:500; display:block }
+.link-row .lt small{ font-size:11px; color:var(--muted) }
+.link-row .ext{ width:15px; height:15px; stroke:var(--muted); fill:none; stroke-width:1.8 }
+
+/* mypage */
+.profile{ display:flex; align-items:center; gap:14px; background:var(--surface);
+  border:1px solid var(--line); border-radius:18px; padding:17px; margin-bottom:16px }
+.avatar{ width:54px; height:54px; border-radius:50%; flex:0 0 auto; display:grid; place-items:center;
+  font-family:var(--serif); font-weight:600; font-size:21px; color:#F4F1EA;
+  background:linear-gradient(150deg,#33597e,#1B2733) }
+.profile .pn{ font-family:var(--serif); font-weight:600; font-size:18px }
+.profile .pid{ font-size:11.5px; color:var(--muted); margin:3px 0 7px; letter-spacing:.04em }
+.line-card{ background:linear-gradient(160deg,#f1f7ef,#eaf3e6); border:1px solid #cfe3c6;
+  border-radius:16px; padding:15px 16px; margin-bottom:16px }
+.line-card p{ font-size:12.5px; color:#3c5235; line-height:1.6; margin-bottom:12px }
+.line-btn{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
+  background:#06C755; color:#fff; border:none; font-family:var(--sans); font-weight:700;
+  font-size:14px; padding:13px; border-radius:12px; cursor:pointer }
+.line-btn:active{ filter:brightness(.95) }
+.menu{ background:var(--surface); border:1px solid var(--line); border-radius:16px; overflow:hidden }
+.menu-row{ display:flex; align-items:center; gap:13px; padding:15px 16px; cursor:pointer; transition:.12s }
+.menu-row:active{ background:var(--surface-2) }
+.menu-row + .menu-row{ border-top:1px solid var(--line) }
+.menu-row svg{ width:19px; height:19px; stroke:var(--ai); fill:none; stroke-width:1.7; flex:0 0 auto }
+.menu-row span{ flex:1; font-size:13.5px; font-weight:500 }
+.menu-row .chev{ width:15px; height:15px; stroke:var(--muted); stroke-width:2 }
+.menu-row.danger span{ color:var(--shu) }
+.menu-row.danger svg{ stroke:var(--shu) }
+
+.foot{ text-align:center; font-size:10.5px; color:var(--muted); margin-top:24px; letter-spacing:.06em }
+
+/* ---------- bottom nav ---------- */
+.nav{
+  position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:100%; max-width:480px;
+  height:calc(var(--nav-h) + var(--safe-b)); padding-bottom:var(--safe-b);
+  background:linear-gradient(180deg,#202f3f,#1B2733);
+  border-top:1px solid rgba(201,167,91,.22);
+  display:flex; z-index:50;
+}
+.nav button{ flex:1; background:none; border:none; cursor:pointer; color:#7E8C99;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  font-family:var(--sans); font-size:9.5px; letter-spacing:.04em; transition:color .2s }
+.nav button svg{ width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.7; transition:.2s }
+.nav button.on{ color:var(--kin) }
+.nav button.on svg{ stroke:var(--kin) }
+.nav button.on::before{ content:""; position:absolute; top:0; width:26px; height:3px; border-radius:0 0 3px 3px; background:var(--kin) }
+
+/* toast */
+.toast{ position:fixed; left:50%; bottom:calc(var(--nav-h) + var(--safe-b) + 18px); transform:translate(-50%,16px);
+  background:var(--sumi); color:#F4F1EA; font-size:12.5px; padding:11px 18px; border-radius:999px;
+  border:1px solid rgba(201,167,91,.4); opacity:0; pointer-events:none; transition:.3s; z-index:80; white-space:nowrap }
+.toast.show{ opacity:1; transform:translate(-50%,0) }
+
+@media(prefers-reduced-motion:reduce){ *{animation:none!important; transition:none!important} }
+:focus-visible{ outline:2px solid var(--kin); outline-offset:2px; border-radius:6px }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="hdr">
+    <div class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="hdr-t">
+      <span class="jp">六層連動操法</span>
+      <span class="sub">MEMBER</span>
+    </div>
+    <button class="hdr-bell" aria-label="お知らせ" onclick="go('news')">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <span class="dot"></span>
+    </button>
+  </header>
+
+  <main class="main" id="main">
+
+    <!-- HOME -->
+    <section class="screen active" id="home">
+      <div class="eyebrow">会員ページ</div>
+      <h1 class="greet">こんにちは、<b>美咲</b>さん</h1>
+      <div class="badges">
+        <span class="badge">9期</span>
+        <span class="badge">東京</span>
+        <span class="badge gold">上級コース</span>
+      </div>
+
+      <div class="hero" onclick="go('schedule')">
+        <div class="layers" aria-hidden="true">
+          <i style="top:4px;width:120px;opacity:.4"></i><i style="top:22px;width:104px;opacity:.55"></i>
+          <i style="top:40px;width:130px;opacity:.7"></i><i style="top:58px;width:90px;opacity:.85"></i>
+          <i style="top:76px;width:116px"></i><i style="top:94px;width:78px"></i>
+        </div>
+        <div class="hero-lab">次回のセミナー</div>
+        <div class="hero-title">9期 上級 第3回</div>
+        <div class="hero-topic">Clock Dial Release / Femoral Torque Release</div>
+        <div class="hero-date">
+          <span class="d">6月28日<span style="font-size:13px;font-weight:400">(日)</span></span>
+          <span class="cd" id="cd">あと—日</span>
+        </div>
+        <div class="hero-meta">
+          <div><b>時間</b>10:00–16:30</div>
+          <div><b>会場</b>東京・大手町</div>
+        </div>
+        <span class="hero-btn">詳細・会場の地図
+          <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </span>
+      </div>
+
+      <div class="quick">
+        <div class="qa" onclick="go('materials')">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+          <span>資料</span>
+        </div>
+        <div class="qa" onclick="toast('動画・資料サイトを開きます（サンプル）')">
+          <div class="ic"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z" fill="var(--ai)" stroke="none"/></svg></div>
+          <span>動画</span>
+        </div>
+        <div class="qa" onclick="go('schedule')">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M17 2v4M7 2v4M3 9h18"/><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M8 14h3"/></svg></div>
+          <span>復習会</span>
+        </div>
+        <div class="qa" onclick="go('mypage')">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M5 21a7 7 0 0 1 14 0"/></svg></div>
+          <span>証明書</span>
+        </div>
+      </div>
+
+      <div class="sec-head"><h2>お知らせ</h2><a onclick="go('news')">すべて見る</a></div>
+      <div class="news-item" onclick="go('news')">
+        <div class="news-top"><span class="cat un">運営</span><span class="news-date">6/10</span></div>
+        <div class="news-title">6月度 受講料のご案内</div>
+      </div>
+      <div class="news-item" onclick="go('news')">
+        <div class="news-top"><span class="cat kyo">教材</span><span class="news-date">6/5</span></div>
+        <div class="news-title">第2回 講義資料を公開しました</div>
+      </div>
+    </section>
+
+    <!-- SCHEDULE -->
+    <section class="screen" id="schedule">
+      <div class="eyebrow">日程</div>
+      <h1 class="scr-title">スケジュール</h1>
+      <div class="chips" id="chips">
+        <div class="chip on" data-f="all">すべて</div>
+        <div class="chip" data-f="東京">東京</div>
+        <div class="chip" data-f="大阪">大阪</div>
+      </div>
+      <div id="ev-list"></div>
+    </section>
+
+    <!-- MATERIALS -->
+    <section class="screen" id="materials">
+      <div class="eyebrow">教材</div>
+      <h1 class="scr-title">資料</h1>
+      <div class="note">資料は Google ドライブ・動画サイトで開きます。印刷用は6分割PDFをご利用ください。</div>
+      <div id="mat-list"></div>
+    </section>
+
+    <!-- NEWS -->
+    <section class="screen" id="news">
+      <div class="eyebrow">最新情報</div>
+      <h1 class="scr-title">お知らせ</h1>
+      <div id="news-list"></div>
+    </section>
+
+    <!-- MYPAGE -->
+    <section class="screen" id="mypage">
+      <div class="eyebrow">会員情報</div>
+      <h1 class="scr-title">マイページ</h1>
+      <div class="profile">
+        <div class="avatar">美</div>
+        <div>
+          <div class="pn">田中 美咲</div>
+          <div class="pid">会員番号 R-9-042</div>
+          <div class="badges" style="margin:0">
+            <span class="badge">9期・東京</span><span class="badge gold">上級</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="line-card">
+        <p>事務局へのご連絡（証明書・お名前の変更・ご欠席など）は LINE で承っています。</p>
+        <button class="line-btn" onclick="toast('LINE 公式アカウントへ移動します（サンプル）')">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.7.2.8.5.1.3.1.7 0 1l-.1.8c-.1.4-.3 1.4 1.2.8 1.5-.6 8-4.7 9.3-8C22.8 12 23 11.5 23 11c0-4.4-4.5-8-11-8z"/></svg>
+          LINEで問い合わせる
+        </button>
+      </div>
+
+      <div class="menu">
+        <div class="menu-row" onclick="toast('証明書の申請（サンプル）')">
+          <svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M8 13l-2 8 6-3 6 3-2-8"/></svg>
+          <span>修了証明書を申請する</span>
+          <svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="menu-row" onclick="toast('お名前の変更（サンプル）')">
+          <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          <span>お名前の登録・変更</span>
+          <svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="menu-row" onclick="toast('受講履歴（サンプル）')">
+          <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 2 4-5"/></svg>
+          <span>受講・出席の履歴</span>
+          <svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="menu-row" onclick="toast('よくある質問（サンプル）')">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7"/><path d="M12 17h.01"/></svg>
+          <span>よくある質問</span>
+          <svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="menu-row danger" onclick="toast('ログアウト（サンプル）')">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+          <span>ログアウト</span>
+        </div>
+      </div>
+
+      <div class="foot">六層連動操法 会員ページ ・ サンプル表示中</div>
+    </section>
+
+  </main>
+
+  <nav class="nav" id="nav">
+    <button class="on" data-s="home" onclick="go('home')" aria-label="ホーム" style="position:relative">
+      <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>ホーム</button>
+    <button data-s="schedule" onclick="go('schedule')" aria-label="予定" style="position:relative">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M17 2v4M7 2v4M3 9h18"/></svg>予定</button>
+    <button data-s="materials" onclick="go('materials')" aria-label="資料" style="position:relative">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>資料</button>
+    <button data-s="news" onclick="go('news')" aria-label="お知らせ" style="position:relative">
+      <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>お知らせ</button>
+    <button data-s="mypage" onclick="go('mypage')" aria-label="マイページ" style="position:relative">
+      <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>マイ</button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ===== サンプルデータ（ここを書き換えれば内容が変わります） ===== */
+const DATA = {
+  schedule: [
+    {date:"2026-06-28", track:"東京", title:"上級 第3回", topic:"Clock Dial Release / Femoral Torque Release", time:"10:00–16:30", venue:"東京・大手町", tag:"plan", tagLabel:"受講予定"},
+    {date:"2026-07-05", track:"大阪", title:"上級 第3回", topic:"Clock Dial Release / Femoral Torque Release", time:"10:00–16:30", venue:"大阪・新大阪", tag:"open", tagLabel:"受付中"},
+    {date:"2026-07-12", track:"東京", title:"オンライン復習会", topic:"側方連結ライン／股関節外転の確認", time:"13:00–16:00", venue:"オンライン(Zoom)", tag:"opt", tagLabel:"任意"},
+    {date:"2026-07-26", track:"東京", title:"上級 第4回", topic:"股関節外転 評価プロトコル", time:"10:00–16:30", venue:"東京・大手町", tag:"plan", tagLabel:"予定"},
+    {date:"2026-08-09", track:"大阪", title:"上級 第4回", topic:"股関節外転 評価プロトコル", time:"10:00–16:30", venue:"大阪・新大阪", tag:"plan", tagLabel:"予定"},
+  ],
+  materials: [
+    {cohort:"9期生", me:true, links:[
+      {t:"講義資料（Google ドライブ）", s:"第1回〜第2回", type:"drive", url:"#"},
+      {t:"6分割PDF（印刷用）", s:"ハンドアウト", type:"pdf", url:"#"},
+      {t:"動画・資料サイト", s:"復習用アーカイブ", type:"video", url:"#"},
+    ]},
+    {cohort:"7期8期生", me:false, links:[
+      {t:"講義資料（Google ドライブ）", s:"アーカイブ", type:"drive", url:"#"},
+      {t:"動画・資料サイト", s:"過去回の復習", type:"video", url:"#"},
+    ]},
+    {cohort:"5期6期生", me:false, links:[
+      {t:"講義資料（Google ドライブ）", s:"アーカイブ", type:"drive", url:"#"},
+    ]},
+  ],
+  news: [
+    {cat:"un", catLabel:"運営", date:"2026-06-10", title:"6月度 受講料のご案内", body:"6月分のお振込期限は6/20です。マイページの履歴よりご確認ください。"},
+    {cat:"kyo", catLabel:"教材", date:"2026-06-05", title:"第2回 講義資料を公開しました", body:"資料タブよりダウンロードいただけます。印刷用の6分割PDFも併せてご利用ください。"},
+    {cat:"fuku", catLabel:"復習会", date:"2026-05-28", title:"7月 オンライン復習会の日程", body:"7/12(日) 13:00より。側方連結ラインと股関節外転の確認を行います。"},
+    {cat:"un", catLabel:"運営", date:"2026-05-20", title:"上級コース 後半カリキュラムについて", body:"第4回以降の内容と会場を更新しました。スケジュールをご確認ください。"},
+  ]
+};
+
+/* ===== ナビ ===== */
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id===id));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on', b.dataset.s===id));
+  document.getElementById('main').scrollTo({top:0,behavior:'instant'});
+}
+
+/* ===== トースト ===== */
+let tT;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(tT); tT=setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+/* ===== カウントダウン ===== */
+(function(){
+  const next=new Date(DATA.schedule[0].date+"T00:00:00");
+  const now=new Date(); now.setHours(0,0,0,0);
+  const days=Math.max(0,Math.round((next-now)/86400000));
+  document.getElementById('cd').textContent = days===0 ? "本日" : "あと"+days+"日";
+})();
+
+/* ===== スケジュール描画 ===== */
+const W=['日','月','火','水','木','金','土'];
+const ICON_CLOCK='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+const ICON_PIN='<svg viewBox="0 0 24 24"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>';
+function renderSchedule(f='all'){
+  const list=document.getElementById('ev-list');
+  const items=DATA.schedule.filter(e=>f==='all'||e.track===f);
+  let html=''; let lastMonth='';
+  items.forEach(e=>{
+    const d=new Date(e.date+"T00:00:00");
+    const mlab=(d.getMonth()+1)+'月';
+    if(mlab!==lastMonth){ html+=`<div class="month-lab">2026年 ${mlab}</div>`; lastMonth=mlab; }
+    html+=`<div class="ev">
+      <div class="ev-date"><div class="m">${mlab}</div><div class="day">${d.getDate()}</div><div class="w">${W[d.getDay()]}</div></div>
+      <div class="ev-body">
+        <div class="ev-title">${e.title}<span class="pill ${e.tag}">${e.tagLabel}</span></div>
+        <div class="ev-topic">${e.topic}</div>
+        <div class="ev-meta"><span>${ICON_CLOCK}${e.time}</span><span>${ICON_PIN}${e.venue}</span></div>
+      </div></div>`;
+  });
+  list.innerHTML = html || '<div class="note">この絞り込みに該当する予定はありません。</div>';
+}
+document.getElementById('chips').addEventListener('click',ev=>{
+  const c=ev.target.closest('.chip'); if(!c)return;
+  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+  c.classList.add('on'); renderSchedule(c.dataset.f);
+});
+
+/* ===== 資料描画 ===== */
+const MAT_ICON={
+  drive:'<svg viewBox="0 0 24 24"><path d="M8 3h8l5 9-4 7H7l-4-7z"/><path d="M3 12h18"/></svg>',
+  pdf:'<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
+  video:'<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M10 9l5 3-5 3z"/></svg>'
+};
+const EXT='<svg class="ext" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
+function renderMaterials(){
+  let html='';
+  DATA.materials.forEach(g=>{
+    html+=`<div class="mat-group"><h3>${g.cohort}${g.me?'<span class="me">あなたの期</span>':''}</h3><div class="mat-card">`;
+    g.links.forEach(l=>{
+      html+=`<div class="link-row" onclick="toast('${l.t}を開きます（サンプル）')">
+        <div class="li">${MAT_ICON[l.type]}</div>
+        <div class="lt"><b>${l.t}</b><small>${l.s}</small></div>${EXT}</div>`;
+    });
+    html+='</div></div>';
+  });
+  document.getElementById('mat-list').innerHTML=html;
+}
+
+/* ===== お知らせ描画 ===== */
+function renderNews(){
+  let html='';
+  DATA.news.forEach(n=>{
+    const d=new Date(n.date+"T00:00:00");
+    html+=`<div class="news-item">
+      <div class="news-top"><span class="cat ${n.cat}">${n.catLabel}</span>
+      <span class="news-date">${d.getMonth()+1}月${d.getDate()}日</span></div>
+      <div class="news-title">${n.title}</div>
+      <div class="news-body">${n.body}</div></div>`;
+  });
+  document.getElementById('news-list').innerHTML=html;
+}
+
+renderSchedule(); renderMaterials(); renderNews();
+</script>
+</body>
+</html>
